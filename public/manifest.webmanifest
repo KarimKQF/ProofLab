@@ -1,0 +1,10 @@
+{
+  "name": "ProofLab — Theorem Engine",
+  "short_name": "ProofLab",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "icons": [{ "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

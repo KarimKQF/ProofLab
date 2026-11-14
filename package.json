@@ -1,0 +1,50 @@
+{
+  "name": "prooflab",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ProofLab — Theorem Engine : jeu local d'apprentissage des mathématiques par la preuve.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:content": "vitest run src/tests/content",
+    "test:e2e": "playwright test",
+    "ai-proxy": "node server/ai-proxy.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0",
+    "@fontsource-variable/inter": "^5.2.0",
+    "@fontsource-variable/jetbrains-mono": "^5.2.0",
+    "@fontsource-variable/source-serif-4": "^5.2.0",
+    "@react-three/fiber": "^9.8.2",
+    "katex": "^0.16.22",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0",
+    "three": "^0.170.0",
+    "zod": "^3.25.0",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.0",
+    "@tailwindcss/vite": "^4.1.8",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/katex": "^0.16.7",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@types/three": "^0.170.0",
+    "@vitejs/plugin-react": "^4.5.1",
+    "fake-indexeddb": "^6.0.1",
+    "jsdom": "^26.1.0",
+    "tailwindcss": "^4.1.8",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.0"
+  }
+}

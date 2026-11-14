@@ -1,0 +1,35 @@
+# Dependencies, builds and local tooling
+node_modules/
+dist/
+.tools/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+*.log
+
+# Credentials and local environment (example files must contain no secrets)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.kdbx
+
+# Private source documents, captures and personal game exports
+source-materials/
+captures*/
+exports/
+prooflab-sauvegarde-*.json
+
+# Local editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Python build caches
+__pycache__/
+*.py[cod]

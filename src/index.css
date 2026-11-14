@@ -1,0 +1,219 @@
+@import 'tailwindcss';
+@import 'katex/dist/katex.min.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/source-serif-4';
+@import '@fontsource-variable/jetbrains-mono';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ─────────────── Jetons de couleur ─────────────── */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b0e14;
+  --surface: #11151d;
+  --surface-2: #171c26;
+  --surface-3: #1f2632;
+  --line: #2a3240;
+  --line-strong: #3b4557;
+  --text: #e7eaf0;
+  --text-2: #a7b1c0;
+  --text-3: #7f8a9b;
+  --accent: #8fb9ff;
+
+  --st-hyp: #3dd6ae; /* hypothèses vérifiées */
+  --st-miss: #f2b441; /* hypothèses manquantes */
+  --st-proved: #6cb0ff; /* étapes démontrées */
+  --st-access: #b4a4ff; /* conclusions accessibles */
+  --st-invalid: #ff7a95; /* implications invalides */
+
+  --st-hyp-bg: rgba(61, 214, 174, 0.1);
+  --st-miss-bg: rgba(242, 180, 65, 0.11);
+  --st-proved-bg: rgba(108, 176, 255, 0.11);
+  --st-access-bg: rgba(180, 164, 255, 0.12);
+  --st-invalid-bg: rgba(255, 122, 149, 0.11);
+  --grid: rgba(143, 185, 255, 0.05);
+  /* Échelle divergente des cartes de chaleur (valeurs négatives / positives). */
+  --div-neg: #3987e5;
+  --div-pos: #d95926;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-3: #e7eaef;
+  --line: #d9dee6;
+  --line-strong: #bcc4d0;
+  --text: #1a2029;
+  --text-2: #4c5766;
+  --text-3: #6b7685;
+  --accent: #2563c9;
+
+  --st-hyp: #0b7a5e;
+  --st-miss: #8a5a00;
+  --st-proved: #1f5fbf;
+  --st-access: #5a42c9;
+  --st-invalid: #b9274f;
+
+  --st-hyp-bg: rgba(11, 122, 94, 0.09);
+  --st-miss-bg: rgba(138, 90, 0, 0.1);
+  --st-proved-bg: rgba(31, 95, 191, 0.09);
+  --st-access-bg: rgba(90, 66, 201, 0.09);
+  --st-invalid-bg: rgba(185, 39, 79, 0.08);
+  --grid: rgba(37, 99, 201, 0.05);
+  --div-neg: #2a78d6;
+  --div-pos: #eb6834;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-hyp: var(--st-hyp);
+  --color-miss: var(--st-miss);
+  --color-proved: var(--st-proved);
+  --color-access: var(--st-access);
+  --color-invalid: var(--st-invalid);
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4 Variable', ui-serif, Georgia, serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Papier millimétré discret, signature visuelle du laboratoire. */
+.lab-grid {
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.katex {
+  font-size: 1.05em;
+}
+
+.katex-display {
+  margin: 0.7em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+
+.prose-math p {
+  margin: 0 0 0.75em;
+}
+
+.prose-math ul,
+.prose-math ol {
+  margin: 0 0 0.75em;
+  padding-left: 1.3em;
+}
+
+.prose-math ul {
+  list-style: disc;
+}
+
+.prose-math ol {
+  list-style: decimal;
+}
+
+.prose-math li {
+  margin-bottom: 0.35em;
+}
+
+.prose-math h3 {
+  font-weight: 600;
+  margin: 0.8em 0 0.4em;
+}
+
+::selection {
+  background: rgba(143, 185, 255, 0.3);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Animations discrètes, désactivables. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-rise {
+  animation: rise-in 0.28s ease-out both;
+}
+
+[data-motion='reduced'] *,
+[data-motion='reduced'] *::before,
+[data-motion='reduced'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+input[type='range'] {
+  accent-color: var(--accent);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
