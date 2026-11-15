@@ -3,7 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { cx } from './ui';
 import { useReviewQueue } from './useReviewQueue';
 
-type IconName = 'home' | 'map' | 'lab' | 'atlas' | 'review' | 'cross' | 'exam' | 'book' | 'chart' | 'sand' | 'cog';
+type IconName = 'home' | 'map' | 'lab' | 'atlas' | 'dico' | 'review' | 'cross' | 'exam' | 'book' | 'chart' | 'sand' | 'cog';
 
 function Icon({ name }: { name: IconName }) {
   const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -23,6 +23,7 @@ function Icon({ name }: { name: IconName }) {
     cross: <path d="M6 6l12 12M18 6 6 18M12 2v3M12 19v3M2 12h3M19 12h3" {...common} />,
     exam: <path d="M7 3h10v18H7zM10 8h4M10 12h4M10 16h2" {...common} />,
     book: <path d="M5 4.5h11a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11" {...common} />,
+    dico: <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v16H5.5A1.5 1.5 0 0 1 4 18.5zM8 15l2.5-7 2.5 7M8.9 12.5h3.2M15 8.5h2M15 11.5h2" {...common} />,
     chart: <path d="M4 20V4M4 20h16M8.5 16v-5M13 16V8M17.5 16v-3" {...common} />,
     sand: <path d="M4 18c3-5 5 1 8-4s5-1 8-7M4 18l2.5 2M20 7l-2.8-.8M12 14l2.2 1.2" {...common} />,
     cog: (
@@ -44,6 +45,7 @@ const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/carte', label: 'Carte', icon: 'map' },
   { to: '/labos', label: 'Laboratoires', icon: 'lab' },
   { to: '/atlas', label: 'Atlas visuel', icon: 'atlas' },
+  { to: '/dictionnaire', label: 'Dictionnaire', icon: 'dico' },
   { to: '/revision', label: 'Révisions', icon: 'review' },
   { to: '/contre-exemples', label: 'Contre-exemples', icon: 'cross' },
   { to: '/examen', label: 'Examen', icon: 'exam' },

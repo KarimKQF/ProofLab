@@ -33,6 +33,17 @@ async function webglColors(page: Page): Promise<number> {
   });
 }
 
+/** Ces scénarios pilotent la vue « Graphe des dépendances » de l'atelier de preuve. */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('prooflab:preuve:vue', 'graphe');
+    } catch {
+      /* stockage indisponible */
+    }
+  });
+});
+
 type Step = { node: string; premises: string[]; by: string; check?: string[] };
 
 /** Chemin complet de l'exercice « crochet-lie.facile ». */

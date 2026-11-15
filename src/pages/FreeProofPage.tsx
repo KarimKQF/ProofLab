@@ -154,7 +154,7 @@ function FreeProof({ exercise, variant }: { exercise: Exercise; variant: boolean
 
       <Card className="p-4 mb-4">
         <SectionTitle className="mb-1.5">Énoncé</SectionTitle>
-        <Prose text={statement} className="font-serif text-[16.5px] leading-relaxed" />
+        <Prose text={statement} className="font-serif text-[16.5px] leading-relaxed" terms />
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -281,7 +281,7 @@ function FreeProof({ exercise, variant }: { exercise: Exercise; variant: boolean
               <Button variant="ghost" className="px-0" onClick={() => setShowSolution((v) => !v)} aria-expanded={showSolution}>
                 {showSolution ? 'Masquer la solution de référence' : 'Comparer à la solution de référence'}
               </Button>
-              {showSolution && <Prose text={solution} className="text-[14.5px] mt-2 anim-rise" />}
+              {showSolution && <Prose text={solution} className="text-[14.5px] mt-2 anim-rise" terms />}
             </div>
           </Card>
         </div>

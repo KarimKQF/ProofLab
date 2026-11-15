@@ -14,6 +14,7 @@ const REGISTRY: Record<string, { file: string; exportName: string }> = {
   galerkin: { file: '../labs/galerkin/GalerkinLab.tsx', exportName: 'GalerkinLab' },
   'sobolev-trace': { file: '../labs/sobolev/SobolevLab.tsx', exportName: 'SobolevLab' },
   'groupes-lie': { file: '../labs/groupes-lie/GroupesLieLab.tsx', exportName: 'GroupesLieLab' },
+  demonstration: { file: '../labs/demonstration/DemonstrationLab.tsx', exportName: 'DemonstrationLab' },
 };
 
 const LABS: Record<string, LazyExoticComponent<ComponentType> | null> = Object.fromEntries(

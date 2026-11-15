@@ -12,7 +12,7 @@ node scripts/verify-visual.mjs http://127.0.0.1:4175 captures-visuel riesz     #
 node scripts/verify-visual.mjs http://127.0.0.1:4175 captures-visuel lie atlas # laboratoire G et atlas
 node scripts/verify-atlas-interactif.mjs http://127.0.0.1:4175 captures-atlas 1-90             # les 90 figures interactives
 node scripts/verify-atlas-interactif.mjs http://127.0.0.1:4175 captures-atlas 1-90 --telephone # idem sur 390 × 844
-npm run test:e2e                                                # suite Playwright complète (33 tests)
+npm run test:e2e                                                # suite Playwright complète (37 tests)
 ```
 
 Sous Git Bash, préfixer par `MSYS_NO_PATHCONV=1` et donner un chemin de sortie Windows (`C:/…`) : sinon les routes et chemins commençant par `/` sont réécrits.
@@ -33,7 +33,7 @@ Chaque scénario manipule l'interface (clavier, pointeur, curseurs, boutons, vue
 | Atlas visuel | 90 planches dans la grille ; figure interactive affichée par défaut ; onglet « Planche originale » : image pleine servie (1684 px), réponse masquée puis révélée ; fiche de résultat avec ses planches ; carte avec le parcours Lie ; téléphone 390 × 844 sans défilement horizontal (figure et planche) ; aucune erreur. |
 | Atlas interactif (script dédié) | pour chacune des 90 planches : figure affichée sans repli, aucune erreur de console ni avertissement NaN / Three.js / WebGL, chaque toile 3D réellement dessinée (plus de deux couleurs), premier curseur déplacé et animation lancée, captures avant / après, aucun défilement horizontal ; sur bureau (1440 × 1000) et sur téléphone (390 × 844). |
 
-Résultat du dernier passage (14 novembre 2026, après les figures interactives de l'atlas) : 51 contrôles, tous réussis (code de sortie 0) ; aucune erreur de console, aucune ressource en échec. Atlas interactif : 90 planches sur 90 sans erreur sur bureau et 90 sur 90 sur téléphone (deux planches interrompues lors d'un premier passage, pendant une compilation lancée en parallèle, ont été repassées seules avec succès). Suite Playwright : 33 tests réussis, dont 11 pour l'atlas interactif (`e2e/atlas-interactif.spec.ts`).
+Résultat du dernier passage (14 novembre 2026, après les figures interactives de l'atlas) : 51 contrôles, tous réussis (code de sortie 0) ; aucune erreur de console, aucune ressource en échec. Atlas interactif : 90 planches sur 90 sans erreur sur bureau et 90 sur 90 sur téléphone (deux planches interrompues lors d'un premier passage, pendant une compilation lancée en parallèle, ont été repassées seules avec succès). Suite Playwright : 33 tests réussis, dont 11 pour l'atlas interactif (`e2e/atlas-interactif.spec.ts`). Le 15 novembre 2026, après le dictionnaire et l'atelier par blocs : 37 tests réussis, dont 4 dans `e2e/dictionnaire-blocs.spec.ts` (bulle de définition, page Dictionnaire, blocs dans un exercice, démonstration par l'absurde complète dans le laboratoire H) ; les scénarios qui pilotent l'ancien atelier choisissent explicitement la vue « Graphe des dépendances ».
 
 ## Captures examinées
 

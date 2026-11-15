@@ -217,3 +217,27 @@ input[type='range'] {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Notions du dictionnaire : soulignement pointillé discret, cliquable au clavier et au pointeur. */
+.term-link {
+  cursor: pointer;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  text-underline-offset: 3px;
+  border-radius: 3px;
+  transition: color 0.12s, background-color 0.12s;
+}
+.term-link:hover {
+  color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.term-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.term-math {
+  text-decoration: none;
+  border-bottom: 1px dotted color-mix(in srgb, var(--accent) 65%, transparent);
+}

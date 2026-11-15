@@ -66,9 +66,9 @@ function Task({ task }: { task: CounterexampleTask }) {
       />
       <Card className="p-5 mb-4" >
         <SectionTitle className="mb-1.5">Assertion</SectionTitle>
-        <p className="font-serif text-[17px] leading-relaxed text-invalid"><MathText text={task.claim} /></p>
+        <p className="font-serif text-[17px] leading-relaxed text-invalid"><MathText text={task.claim} terms /></p>
         <SectionTitle className="mt-4 mb-1.5">À produire</SectionTitle>
-        <Prose text={task.task} />
+        <Prose text={task.task} terms />
       </Card>
       <Card className="p-5 mb-4">
         <CheckInput
@@ -86,9 +86,9 @@ function Task({ task }: { task: CounterexampleTask }) {
       {(solved || reveal) && (
         <Card className="p-5 anim-rise">
           <SectionTitle className="mb-1.5">Justification</SectionTitle>
-          <Prose text={task.explanation} className="text-[15px]" />
+          <Prose text={task.explanation} className="text-[15px]" terms />
           <SectionTitle className="mt-4 mb-1.5">Énoncé exact</SectionTitle>
-          <Prose text={task.correctStatement} className={cx('text-[15px]')} />
+          <Prose text={task.correctStatement} className={cx('text-[15px]')} terms />
           <p className="text-xs text-text-3 mt-3">
             {sourceRef(task.source)}. 
             <MathText text={task.source.label} />

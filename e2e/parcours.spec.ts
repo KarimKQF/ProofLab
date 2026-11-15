@@ -13,6 +13,17 @@ function watchErrors(page: Page): string[] {
   return errors;
 }
 
+/** Ces scénarios pilotent la vue « Graphe des dépendances » de l'atelier de preuve. */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('prooflab:preuve:vue', 'graphe');
+    } catch {
+      /* stockage indisponible */
+    }
+  });
+});
+
 type Step = { node: string; premises: string[]; by: string; check?: string[] };
 
 /** Chemin complet de l'exercice « Projection sur un demi-plan fermé ». */
@@ -172,9 +183,9 @@ test('thème clair et réduction des animations', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
 });
 
-test('les sept laboratoires se chargent sans erreur', async ({ page }) => {
+test('les huit laboratoires se chargent sans erreur', async ({ page }) => {
   const errors = watchErrors(page);
-  for (const id of ['projection', 'riesz-lax-milgram', 'convergences', 'compacite', 'galerkin', 'sobolev-trace', 'groupes-lie']) {
+  for (const id of ['projection', 'riesz-lax-milgram', 'convergences', 'compacite', 'galerkin', 'sobolev-trace', 'groupes-lie', 'demonstration']) {
     await page.goto(`/#/labo/${id}`);
     await expect(page.locator('main h1')).toBeVisible();
     await expect(page.locator('main h1')).not.toHaveText('Laboratoire indisponible');

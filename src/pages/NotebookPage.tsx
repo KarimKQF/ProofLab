@@ -3,6 +3,12 @@ import { Link } from 'react-router-dom';
 import { DEFINITIONS, THEOREMS, CATALOG_BY_ID, WORLDS } from '@/content';
 import { Card, PageHeader, pdfRef, SectionTitle } from '@/components/ui';
 import { MathText, Prose } from '@/components/Math';
+import { TermScope } from '@/components/glossary/context';
+import { trackOfTheorem } from '@/content/dictionnaire';
+import { THEOREM_MODULES } from '@/content';
+
+/** Parcours de chaque définition du carnet (celui du résultat qui l'introduit). */
+const DEF_TRACK = new Map(THEOREM_MODULES.flatMap((m) => m.definitions.map((d) => [d.id, trackOfTheorem(m.theorem.id)] as const)));
 import { useGame } from '@/storage/store';
 import { isUnlocked } from '@/core/progression/mastery';
 import { toRoman } from './MapPage';
@@ -54,6 +60,7 @@ export function NotebookPage() {
             const w = WORLDS.find((x) => x.n === e.world)!;
             return (
               <li key={t.id}>
+                <TermScope track={w.track}>
                 <Card className="p-4">
                   <div className="flex flex-wrap justify-between gap-2 mb-1">
                     <Link to={`/theoreme/${t.id}`} className="font-serif text-[17px] hover:underline">
@@ -65,15 +72,16 @@ export function NotebookPage() {
                     <>
                       <ul className="text-[13.5px] text-text-2 space-y-0.5 mb-1.5">
                         {t.hypotheses.map((h) => (
-                          <li key={h.id}><MathText text={h.text} /></li>
+                          <li key={h.id}><MathText text={h.text} terms={{ exclude: [`resultat-${t.id}`] }} /></li>
                         ))}
                       </ul>
-                      <Prose text={t.statement} className="text-[14.5px]" />
+                      <Prose text={t.statement} className="text-[14.5px]" terms={{ exclude: [`resultat-${t.id}`] }} />
                     </>
                   ) : (
                     <p className="text-sm text-text-3">Énoncé masqué : ce résultat n’est pas encore ouvert.</p>
                   )}
                 </Card>
+                </TermScope>
               </li>
             );
           })}
@@ -83,13 +91,15 @@ export function NotebookPage() {
           <SectionTitle className="mb-3">Définitions ({definitions.length})</SectionTitle>
           <dl className="space-y-3">
             {definitions.map((d) => (
-              <div key={d.id}>
+              <TermScope key={d.id} track={DEF_TRACK.get(d.id)}>
+              <div>
                 <dt className="font-medium"><MathText text={d.term} /></dt>
                 <dd className="text-[14.5px] text-text-2">
-                  <MathText text={d.statement} />
+                  <MathText text={d.statement} terms />
                   {d.source.doc !== 'complement' && <span className="ml-1.5 font-mono text-[11px] text-text-3">{pdfRef(d.source.pdfPage, d.source.doc)}</span>}
                 </dd>
               </div>
+              </TermScope>
             ))}
           </dl>
         </Card>

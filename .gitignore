@@ -33,3 +33,4 @@ Thumbs.db
 # Python build caches
 __pycache__/
 *.py[cod]
+Compte_rendu_ProofLab_*.pdf

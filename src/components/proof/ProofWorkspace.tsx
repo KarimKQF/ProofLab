@@ -1,20 +1,25 @@
 /**
- * Éditeur de preuve : banque de propositions, graphe, inspecteur d'étape.
- * Le joueur pose des propositions dans l'ordre qu'il veut ; chaque étape se vérifie
- * explicitement ; rien n'est validé sans une règle établie par le moteur.
+ * Atelier de preuve. Deux vues d'une même preuve, qui partagent la même session :
+ * - « Blocs » (par défaut) : la démonstration s'écrit de haut en bas, bloc par bloc
+ *   (Soit / Supposons, implication, théorème, calcul, contradiction, conclusion) ;
+ * - « Graphe » : banque de propositions, graphe des dépendances, inspecteur d'étape.
+ * Rien n'est validé sans une règle établie par le moteur, quelle que soit la vue.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { ProofSpec } from '@/content/schema';
 import { NODE_KIND_LABEL } from '@/content/schema';
-import { hypothesisRemovalReport, isGiven, visibleNodes, type NodeId } from '@/core/proof-engine/engine';
+import { isGiven, visibleNodes, type NodeId } from '@/core/proof-engine/engine';
+import type { DicoTrack } from '@/content/dictionnaire/types';
 import { Button, Card, cx, SectionTitle, STATUS_META, StatusBadge, StatusLegend } from '@/components/ui';
-import { MathText, Prose } from '@/components/Math';
+import { MathText } from '@/components/Math';
 import { ProofGraph } from './ProofGraph';
 import { CheckInput } from './CheckInput';
+import { RemovalPanel } from './RemovalPanel';
 import { nodeText } from './text';
 import { type AttemptStats, type Feedback, useProofSession, type ProofSession } from './useProofSession';
+import { ProofBlocks } from './blocks/ProofBlocks';
 
-export type WorkspaceMode = 'guide' | 'examen' | 'labo';
+export type WorkspaceMode = 'guide' | 'examen' | 'labo' | 'demo';
 
 export interface WorkspaceProps {
   spec: ProofSpec;
@@ -30,19 +35,28 @@ export interface WorkspaceProps {
   onUnlocks?: (keys: string[]) => void;
   onSession?: (s: ProofSession) => void;
   solvedSlot?: ReactNode;
+  /** Plan de la démonstration de référence (laboratoire de démonstration). */
+  plan?: readonly string[];
+  /** Parcours du résultat, pour les notions du dictionnaire. */
+  track?: DicoTrack;
 }
 
 const HINT_NAMES = ['Orientation', 'Structure', 'Déblocage'];
+const VIEW_KEY = 'prooflab:preuve:vue';
+type View = 'blocs' | 'graphe';
+
+function readView(): View {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'graphe' ? 'graphe' : 'blocs';
+  } catch {
+    return 'blocs';
+  }
+}
 
 export function ProofWorkspace(props: WorkspaceProps) {
-  const { spec, allowed, draftKey, errorKey, mode, guided, hints, onHintUsed, onSolved, onUnlocks, onSession, solvedSlot } = props;
+  const { spec, allowed, draftKey, errorKey, onSolved, onUnlocks, onSession, onHintUsed } = props;
   const session = useProofSession({ spec, allowed, draftKey, errorKey, onUnlocks, onGoalReached: onSolved });
-  const { graph, analysis, passedChecks, feedback, place, verify, removeNode, passCheck, removed, toggleRemoved, reset, refused } = session;
-
-  const [selected, setSelected] = useState<NodeId | null>(null);
-  const hintLevel = session.hints;
-
-  const solved = analysis.goalReached && removed.size === 0;
+  const [view, setView] = useState<View>(readView);
 
   useEffect(() => {
     onSession?.(session);
@@ -52,6 +66,67 @@ export function ProofWorkspace(props: WorkspaceProps) {
     session.setHintLevel(level);
     onHintUsed?.(level);
   };
+
+  const choose = (v: View) => {
+    setView(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* préférence non conservée */
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2" role="tablist" aria-label="Vue de la preuve">
+        {(
+          [
+            ['blocs', 'Blocs logiques'],
+            ['graphe', 'Graphe des dépendances'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={view === id}
+            data-vue-preuve={id}
+            onClick={() => choose(id)}
+            className={cx('rounded-md border px-3 py-1.5 text-[13px] transition-colors cursor-pointer', view === id ? 'border-accent bg-accent text-[var(--bg)]' : 'border-line hover:border-line-strong')}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="text-[12px] text-text-3">Les deux vues montrent la même preuve.</span>
+      </div>
+      {view === 'blocs' ? (
+        <ProofBlocks
+          spec={spec}
+          session={session}
+          mode={props.mode}
+          guided={props.guided}
+          hints={props.hints}
+          hintLevel={session.hints}
+          onHint={showHint}
+          solvedSlot={props.solvedSlot}
+          plan={props.plan}
+          track={props.track}
+        />
+      ) : (
+        <GraphView {...props} session={session} showHint={showHint} />
+      )}
+    </div>
+  );
+}
+
+function GraphView(props: WorkspaceProps & { session: ProofSession; showHint: (level: number) => void }) {
+  const { spec, mode, guided, hints, solvedSlot, session, showHint } = props;
+  const { graph, analysis, passedChecks, feedback, place, verify, removeNode, passCheck, removed, toggleRemoved, reset, refused } = session;
+
+  const [selected, setSelected] = useState<NodeId | null>(null);
+  const hintLevel = session.hints;
+
+  const solved = analysis.goalReached && removed.size === 0;
 
   const visible = useMemo(
     () => new Set(visibleNodes(spec, analysis, graph.placed, guided && mode !== 'examen')),
@@ -79,7 +154,7 @@ export function ProofWorkspace(props: WorkspaceProps) {
             return (
               <li key={n.id} className="rounded-md border border-line px-2.5 py-1.5 text-[13.5px]" style={{ borderLeft: `3px solid ${STATUS_META[st].color}` }}>
                 {n.local && <span className="font-mono text-[10px] uppercase tracking-wider text-text-3 mr-1.5">Locale</span>}
-                <MathText text={n.text} />
+                <MathText text={n.text} terms />
               </li>
             );
           })}
@@ -176,7 +251,7 @@ export function ProofWorkspace(props: WorkspaceProps) {
                         {level}. {HINT_NAMES[level - 1]}
                       </div>
                       <p className="text-sm">
-                        <MathText text={hints[level - 1]!} />
+                        <MathText text={hints[level - 1]!} terms />
                       </p>
                     </div>
                   ) : (
@@ -233,7 +308,7 @@ function Inspector({
       <Card className="p-3.5 anim-rise">
         <SectionTitle className="mb-2">Donnée disponible</SectionTitle>
         <p className="text-sm">
-          <MathText text={node.text} />
+          <MathText text={node.text} terms />
         </p>
       </Card>
     );
@@ -250,63 +325,63 @@ function Inspector({
   return (
     <Card className="p-3.5 anim-rise">
       <div data-testid="inspector">
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <SectionTitle>Étape</SectionTitle>
-        <StatusBadge status={status} />
-      </div>
-      <p className="text-[14.5px] mb-3">
-        <MathText text={nodeText(node, passedChecks)} />
-      </p>
-
-      {node.check && !passedChecks.has(nodeId) && (
-        <div className="mb-4 rounded-md border border-line p-2.5">
-          <CheckInput check={node.check} onResult={(r) => r.status === 'valide' && onPassCheck(nodeId)} />
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <SectionTitle>Étape</SectionTitle>
+          <StatusBadge status={status} />
         </div>
-      )}
-      {node.check && passedChecks.has(nodeId) && (
-        <p className="mb-3 text-[13px] text-hyp" role="status" data-testid="check-passed">
-          <span aria-hidden>✓ </span>Calcul exact validé. Il reste à justifier l’étape.
+        <p className="text-[14.5px] mb-3">
+          <MathText text={nodeText(node, passedChecks)} terms />
         </p>
-      )}
 
-      <SectionTitle className="mb-1.5">Prémisses utilisées</SectionTitle>
-      <ul className="space-y-1 mb-4 max-h-52 overflow-auto pr-1">
-        {candidates.map((c) => (
-          <li key={c.id}>
-            <label className="flex items-start gap-2 text-[13px] cursor-pointer">
-              <input type="checkbox" className="mt-1 shrink-0" checked={premises.includes(c.id)} onChange={() => toggle(c.id)} data-testid={`premise-${c.id}`} />
-              <span>
-                <MathText text={nodeText(c, passedChecks)} />
-              </span>
-            </label>
-          </li>
-        ))}
-      </ul>
+        {node.check && !passedChecks.has(nodeId) && (
+          <div className="mb-4 rounded-md border border-line p-2.5">
+            <CheckInput check={node.check} onResult={(r) => r.status === 'valide' && onPassCheck(nodeId)} />
+          </div>
+        )}
+        {node.check && passedChecks.has(nodeId) && (
+          <p className="mb-3 text-[13px] text-hyp" role="status" data-testid="check-passed">
+            <span aria-hidden>✓ </span>Calcul exact validé. Il reste à justifier l’étape.
+          </p>
+        )}
 
-      <SectionTitle className="mb-1.5">Justification</SectionTitle>
-      <ul className="space-y-1 mb-4 max-h-60 overflow-auto pr-1" role="radiogroup" aria-label="Justification de l'étape">
-        {spec.justifications.map((j) => (
-          <li key={j.id}>
-            <label className="flex items-start gap-2 text-[13px] cursor-pointer">
-              <input type="radio" name="justification" className="mt-1 shrink-0" checked={justification === j.id} onChange={() => setJustification(j.id)} data-testid={`just-${j.id}`} />
-              <span>
-                <MathText text={j.label} />
-              </span>
-            </label>
-          </li>
-        ))}
-      </ul>
+        <SectionTitle className="mb-1.5">Prémisses utilisées</SectionTitle>
+        <ul className="space-y-1 mb-4 max-h-52 overflow-auto pr-1">
+          {candidates.map((c) => (
+            <li key={c.id}>
+              <label className="flex items-start gap-2 text-[13px] cursor-pointer">
+                <input type="checkbox" className="mt-1 shrink-0" checked={premises.includes(c.id)} onChange={() => toggle(c.id)} data-testid={`premise-${c.id}`} />
+                <span>
+                  <MathText text={nodeText(c, passedChecks)} />
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
 
-      <div className="flex items-center gap-2">
-        <Button variant="primary" onClick={() => onVerify(nodeId, premises, justification)} data-testid="verify-step">
-          Vérifier l’étape
-        </Button>
-        <Button variant="ghost" onClick={() => onRemove(nodeId)}>
-          Retirer
-        </Button>
-      </div>
+        <SectionTitle className="mb-1.5">Justification</SectionTitle>
+        <ul className="space-y-1 mb-4 max-h-60 overflow-auto pr-1" role="radiogroup" aria-label="Justification de l'étape">
+          {spec.justifications.map((j) => (
+            <li key={j.id}>
+              <label className="flex items-start gap-2 text-[13px] cursor-pointer">
+                <input type="radio" name="justification" className="mt-1 shrink-0" checked={justification === j.id} onChange={() => setJustification(j.id)} data-testid={`just-${j.id}`} />
+                <span>
+                  <MathText text={j.label} />
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
 
-      <FeedbackPanel feedback={feedback?.node === nodeId ? feedback : null} spec={spec} inline />
+        <div className="flex items-center gap-2">
+          <Button variant="primary" onClick={() => onVerify(nodeId, premises, justification)} data-testid="verify-step">
+            Vérifier l’étape
+          </Button>
+          <Button variant="ghost" onClick={() => onRemove(nodeId)}>
+            Retirer
+          </Button>
+        </div>
+
+        <FeedbackPanel feedback={feedback?.node === nodeId ? feedback : null} spec={spec} inline />
       </div>
     </Card>
   );
@@ -337,7 +412,7 @@ function FeedbackPanel({ feedback, spec, inline = false }: { feedback: Feedback 
       return (
         <p className="text-sm text-miss">
           <span className="font-semibold">À justifier. </span>
-          <MathText text={v.message} />
+          <MathText text={v.message} terms />
         </p>
       );
     }
@@ -345,12 +420,12 @@ function FeedbackPanel({ feedback, spec, inline = false }: { feedback: Feedback 
       <div className="text-sm text-invalid space-y-1.5">
         <p>
           <span className="font-semibold">Incorrect. </span>
-          <MathText text={v.message} />
+          <MathText text={v.message} terms />
         </p>
         {v.counterexample && (
           <p className="text-text">
             <span className="font-mono text-[11px] text-text-3">Contre-exemple : </span>
-            <MathText text={v.counterexample} />
+            <MathText text={v.counterexample} terms />
           </p>
         )}
       </div>
@@ -363,60 +438,5 @@ function FeedbackPanel({ feedback, spec, inline = false }: { feedback: Feedback 
       {content && !inline ? <Card className="p-3.5 anim-rise">{content}</Card> : content}
       {!content && !inline && spec.nodes.length === 0 ? null : null}
     </div>
-  );
-}
-
-function RemovalPanel({
-  spec,
-  session,
-  removed,
-  toggle,
-}: {
-  spec: ProofSpec;
-  session: ProofSession;
-  removed: ReadonlySet<NodeId>;
-  toggle: (id: NodeId) => void;
-}) {
-  const { analysis } = session;
-  return (
-    <Card className="p-3.5">
-      <SectionTitle className="mb-2">Retirer une hypothèse</SectionTitle>
-      <p className="text-xs text-text-3 mb-2.5">Observe ce qui cesse d’être valable, et pourquoi.</p>
-      <ul className="space-y-2.5">
-        {spec.removable.map((r) => {
-          const on = removed.has(r.hypothesis);
-          const report = hypothesisRemovalReport(spec, r.hypothesis);
-          return (
-            <li key={r.hypothesis}>
-              <label className="flex items-start gap-2 text-[13.5px] cursor-pointer">
-                <input type="checkbox" className="mt-1" checked={on} onChange={() => toggle(r.hypothesis)} data-testid={`remove-${r.hypothesis}`} />
-                <MathText text={r.label} />
-              </label>
-              {on && (
-                <div className="mt-1.5 ml-5 space-y-1 text-[13px] anim-rise">
-                  <p className="text-miss">
-                    {report.goalStillDerivable
-                      ? 'Le but reste atteignable par un autre chemin, sans cette propriété.'
-                      : 'Le théorème ne peut plus être invoqué : le but n’est plus atteignable à partir de ce qui reste.'}
-                  </p>
-                  <p>
-                    <MathText text={r.explanation} />
-                  </p>
-                  <div className="rounded border border-line p-2">
-                    <span className="font-mono text-[11px] text-text-3">Contre-exemple</span>
-                    <Prose text={r.counterexample} className="text-[13px]" />
-                  </div>
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {removed.size > 0 && (
-        <p className="mt-2.5 text-xs text-text-3">
-          {analysis.goalReached ? 'Le but reste établi.' : 'La preuve est suspendue tant qu’une propriété est retirée : rien n’est perdu.'}
-        </p>
-      )}
-    </Card>
   );
 }

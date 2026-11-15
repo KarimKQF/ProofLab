@@ -225,7 +225,7 @@ function ExamRun({ items, minutes, startedAt, onExit }: { items: ExamItem[]; min
                   <SectionTitle className="mb-1">Ta rédaction</SectionTitle>
                   {texts[i]?.trim() ? <Prose text={texts[i]!} className="text-[14.5px] mb-3" /> : <p className="text-sm text-text-3 mb-3">Aucune rédaction.</p>}
                   <SectionTitle className="mb-1">Solution de référence</SectionTitle>
-                  <Prose text={item.exercise.variant.solution} className="text-[14.5px] mb-3" />
+                  <Prose text={item.exercise.variant.solution} className="text-[14.5px] mb-3" terms />
                   <SectionTitle className="mb-1.5">Auto-évaluation</SectionTitle>
                   <ul className="grid sm:grid-cols-2 gap-3">
                     {item.exercise.rubric.map((c) => (
@@ -299,7 +299,7 @@ function ExamRun({ items, minutes, startedAt, onExit }: { items: ExamItem[]; min
       </div>
       <Card className="p-4 mb-4">
         <SectionTitle className="mb-1.5">Énoncé</SectionTitle>
-        <Prose text={item.exercise.variant.statement} className="font-serif text-[16.5px] leading-relaxed" />
+        <Prose text={item.exercise.variant.statement} className="font-serif text-[16.5px] leading-relaxed" terms />
       </Card>
       {items.map((it, i) => (
         <div key={it.exercise.id} hidden={i !== index}>

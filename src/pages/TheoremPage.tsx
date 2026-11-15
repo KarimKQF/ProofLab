@@ -5,6 +5,7 @@ import { LEVEL_LABEL } from '@/content/schema';
 import { AUX_TOOLS, theoremLabel } from '@/content/catalog';
 import { Button, Card, LinkButton, PageHeader, ProgressBar, SectionTitle, formatDate, pdfRef, REVIEW_LABEL, VERIFICATION_LABEL } from '@/components/ui';
 import { MathText, Prose } from '@/components/Math';
+import { TermScope } from '@/components/glossary/context';
 import { useGame } from '@/storage/store';
 import { autonomyOf, isUnlocked, theoremMastery } from '@/core/progression/mastery';
 import { toRoman } from './MapPage';
@@ -36,7 +37,9 @@ export function TheoremPage() {
   const mastery = theoremMastery(id, exercises, now());
   const items = exercisesOf(id);
 
+  const self = { exclude: [`resultat-${id}`] };
   return (
+    <TermScope track={world.track}>
     <div className="max-w-5xl mx-auto px-6 md:px-10 py-9">
       <PageHeader
         eyebrow={
@@ -79,7 +82,7 @@ export function TheoremPage() {
               <ul className="space-y-1 text-[14.5px]">
                 {content.spaces.map((s, i) => (
                   <li key={i}>
-                    <MathText text={s} />
+                    <MathText text={s} terms={self} />
                   </li>
                 ))}
               </ul>
@@ -93,7 +96,7 @@ export function TheoremPage() {
                     <div className="flex items-start justify-between gap-3">
                       <span>
                         <span className="text-hyp mr-1.5" aria-hidden>◆</span>
-                        <MathText text={h.text} />
+                        <MathText text={h.text} terms={self} />
                       </span>
                       {h.whenRemoved && (
                         <button
@@ -108,7 +111,7 @@ export function TheoremPage() {
                     </div>
                     {openHyp === h.id && h.whenRemoved && (
                       <div className="mt-1.5 ml-5 rounded border border-line p-2.5 text-[13.5px] anim-rise" style={{ borderLeft: '3px solid var(--st-miss)' }}>
-                        <MathText text={h.whenRemoved} />
+                        <MathText text={h.whenRemoved} terms={self} />
                       </div>
                     )}
                   </li>
@@ -118,14 +121,14 @@ export function TheoremPage() {
 
             <Card className="p-5">
               <SectionTitle className="mb-2">Énoncé</SectionTitle>
-              <Prose text={content.statement} className="font-serif text-[16.5px] leading-relaxed" />
+              <Prose text={content.statement} className="font-serif text-[16.5px] leading-relaxed" terms={self} />
               <dl className="mt-3 grid gap-x-4 gap-y-1.5 sm:grid-cols-[auto_1fr] text-[13.5px]">
                 {CONCLUSIONS.map(([k, label]) =>
                   content.conclusions[k] ? (
                     <div key={k} className="contents">
                       <dt className="font-mono text-[11px] uppercase tracking-wider text-text-3 pt-0.5">{label}</dt>
                       <dd>
-                        <MathText text={content.conclusions[k]!} />
+                        <MathText text={content.conclusions[k]!} terms={self} />
                       </dd>
                     </div>
                   ) : null,
@@ -152,13 +155,14 @@ export function TheoremPage() {
                         </div>
                         <div className="font-medium mt-0.5 mb-1"><MathText text={e.title} /></div>
                         <p className="text-[13.5px] text-text-2 mb-2.5 line-clamp-3">
-                          <MathText text={e.statement} />
+                          <MathText text={e.statement} terms={self} />
                         </p>
                         <div className="flex flex-wrap gap-2">
                           <LinkButton to={`/preuve/${e.id}`} variant="primary">
                             {hasDraft ? 'Reprendre la preuve' : 'Construire la preuve'}
                           </LinkButton>
                           <LinkButton to={`/preuve-libre/${e.id}`}>Preuve libre</LinkButton>
+                          {e.proof.purpose === 'demonstration' && <LinkButton to={`/labo/demonstration?exercice=${e.id}`}>Laboratoire de démonstration</LinkButton>}
                           {p?.solved && e.variant.proof && <LinkButton to={`/preuve/${e.id}?variante=1`}>Variante</LinkButton>}
                         </div>
                       </li>
@@ -179,7 +183,7 @@ export function TheoremPage() {
                 <ol className="list-decimal pl-5 space-y-1 text-[14px] anim-rise">
                   {content.proofOutline.map((s, i) => (
                     <li key={i}>
-                      <MathText text={s} />
+                      <MathText text={s} terms={self} />
                     </li>
                   ))}
                 </ol>
@@ -194,7 +198,7 @@ export function TheoremPage() {
                   {content.warnings.map((w, i) => (
                     <li key={i}>
                       <span className="text-miss mr-1.5" aria-hidden>△</span>
-                      <MathText text={w} />
+                      <MathText text={w} terms={self} />
                     </li>
                   ))}
                 </ul>
@@ -204,7 +208,7 @@ export function TheoremPage() {
             <Card className="p-5">
               <SectionTitle className="mb-2">Pourquoi utile aux EDP</SectionTitle>
               <p className="text-[14.5px]">
-                <MathText text={content.usefulFor} />
+                <MathText text={content.usefulFor} terms={self} />
               </p>
             </Card>
           </div>
@@ -286,6 +290,7 @@ export function TheoremPage() {
         </div>
       )}
     </div>
+    </TermScope>
   );
 }
 

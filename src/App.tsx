@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { HashRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { GlossaryProvider } from './components/glossary/GlossaryProvider';
 import { flushPersist, useGame } from './storage/store';
 import { HomePage } from './pages/HomePage';
 
@@ -19,6 +20,7 @@ const LabsPage = lazy(() => import('./pages/LabsPage').then((m) => ({ default: m
 const LabPage = lazy(() => import('./pages/LabPage').then((m) => ({ default: m.LabPage })));
 const AtlasPage = lazy(() => import('./pages/AtlasPage').then((m) => ({ default: m.AtlasPage })));
 const PlatePage = lazy(() => import('./pages/AtlasPage').then((m) => ({ default: m.PlatePage })));
+const DictionaryPage = lazy(() => import('./pages/DictionaryPage').then((m) => ({ default: m.DictionaryPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 function RouteTracker() {
@@ -70,6 +72,7 @@ export function App() {
   return (
     <HashRouter>
       <RouteTracker />
+      <GlossaryProvider>
       <Layout>
         <Suspense fallback={<div className="p-8 text-text-2" role="status">Chargement…</div>}>
           <Routes>
@@ -90,10 +93,13 @@ export function App() {
             <Route path="/labo/:id" element={<LabPage />} />
             <Route path="/atlas" element={<AtlasPage />} />
             <Route path="/atlas/:n" element={<PlatePage />} />
+            <Route path="/dictionnaire" element={<DictionaryPage />} />
+            <Route path="/dictionnaire/:id" element={<DictionaryPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </Layout>
+      </GlossaryProvider>
     </HashRouter>
   );
 }

@@ -5,10 +5,10 @@ Ce document fixe l’architecture, le modèle de données, le système de valida
 ## 1. Audit initial
 
 - Répertoire de travail vide à l’origine. Aucune application existante à préserver.
-- Sources : polycopié d’analyse fonctionnelle et d’EDP, consulté pour les énoncés ; autres documents consultés pour le contexte. Les documents originaux et leurs extractions restent privés et ne sont pas distribués dans ce dépôt.
-- Les renvois au polycopié indiquent les pages PDF ; page imprimée = page PDF − 4. Les extractions de travail ne sont pas distribuées.
+- Sources : `Polycopie_Complements_Analyse_Fonctionnelle_EDP.pdf` (46 pages, copie locale dans `source-materials/`, original conservé hors du projet) ; `main.pdf` (« Socle EDP, Scientific Machine Learning et PINNs », 1 174 pages), consulté pour le contexte seulement.
+- Extraction texte page par page : `source-materials/extraits/polycopie_texte_par_page.txt` (marqueurs `<<<PAGE n>>>` = pages du PDF ; page imprimée = page PDF − 4).
 - Le polycopié contient la carte des 34 résultats (p. PDF 37) et les 102 exercices classés par théorème (p. PDF 38–44) : le contenu du jeu part de ces énoncés.
-- Exécution avec Node.js ≥ 20. Une installation portable peut être placée localement dans `.tools/node`, dossier exclu du dépôt.
+- Node.js était absent du système : une copie portable officielle (v26.13.0, somme SHA-256 vérifiée) est placée dans `.tools/node`, sans rien modifier hors du projet.
 
 ### Erreur relevée dans le polycopié
 

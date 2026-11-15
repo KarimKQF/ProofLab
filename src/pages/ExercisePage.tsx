@@ -5,6 +5,8 @@ import { LEVEL_LABEL, type Exercise, type ProofSpec } from '@/content/schema';
 import { allowedTheorems, theoremLabel } from '@/content/catalog';
 import { Button, Card, Chip, LinkButton, PageHeader, SectionTitle, sourceRef, REVIEW_LABEL, VERIFICATION_LABEL } from '@/components/ui';
 import { MathText, Prose } from '@/components/Math';
+import { TermScope } from '@/components/glossary/context';
+import { trackOfTheorem } from '@/content/dictionnaire';
 import { ProofWorkspace } from '@/components/proof/ProofWorkspace';
 import { CheckInput } from '@/components/proof/CheckInput';
 import type { AttemptStats, ProofSession } from '@/components/proof/useProofSession';
@@ -123,6 +125,7 @@ function ExerciseRun({ exercise, variant }: { exercise: Exercise; variant: boole
   const next = siblings[siblings.findIndex((e) => e.id === exercise.id) + 1];
 
   return (
+    <TermScope track={trackOfTheorem(exercise.theoremId)}>
     <div className="max-w-[1500px] mx-auto px-5 md:px-8 py-7">
       <PageHeader
         eyebrow={
@@ -141,7 +144,7 @@ function ExerciseRun({ exercise, variant }: { exercise: Exercise; variant: boole
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 max-w-4xl">
             <SectionTitle className="mb-1.5">Énoncé</SectionTitle>
-            <Prose text={statement} className="font-serif text-[16.5px] leading-relaxed" />
+            <Prose text={statement} className="font-serif text-[16.5px] leading-relaxed" terms />
           </div>
           {spec && (
             <label className="flex items-center gap-2 text-[13px] text-text-2 cursor-pointer shrink-0">
@@ -169,6 +172,7 @@ function ExerciseRun({ exercise, variant }: { exercise: Exercise; variant: boole
           allowed={allowed}
           draftKey={draftKey}
           errorKey={exercise.id}
+          track={trackOfTheorem(exercise.theoremId)}
           mode="guide"
           guided={!expertBank}
           hints={exercise.hints}
@@ -237,7 +241,7 @@ function ExerciseRun({ exercise, variant }: { exercise: Exercise; variant: boole
               <Button onClick={() => (solvedNow ? setShowSolution(true) : setConfirming(true))} variant="ghost">Afficher la solution</Button>
             )
           ) : (
-            <Prose text={solution} className="text-[14.5px] anim-rise" />
+            <Prose text={solution} className="text-[14.5px] anim-rise" terms />
           )}
         </Card>
         <Card className="p-4">
@@ -245,7 +249,7 @@ function ExerciseRun({ exercise, variant }: { exercise: Exercise; variant: boole
           <ul className="space-y-1.5 text-[13.5px]">
             {exercise.commonErrors.map((e) => (
               <li key={e.id}>
-                <MathText text={e.description} />
+                <MathText text={e.description} terms />
               </li>
             ))}
           </ul>
@@ -255,5 +259,6 @@ function ExerciseRun({ exercise, variant }: { exercise: Exercise; variant: boole
         </Card>
       </div>
     </div>
+    </TermScope>
   );
 }

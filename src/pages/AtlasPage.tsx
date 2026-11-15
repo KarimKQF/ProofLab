@@ -22,6 +22,8 @@ import {
   type AtlasPlate,
 } from '@/content/atlas';
 import { NotFoundPage } from './NotFoundPage';
+import { MathText } from '@/components/Math';
+import { TermScope } from '@/components/glossary/context';
 import { hasInteractive, interactiveLoader } from '@/atlas-interactif/registry';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -174,7 +176,7 @@ export function AtlasPage() {
   );
 }
 
-function Quoted({ title, children }: { title: string; children: string }) {
+function Quoted({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
       <SectionTitle className="mb-1.5">{title}</SectionTitle>
@@ -305,7 +307,7 @@ export function PlatePage() {
         }
         title={plate.title}
       >
-        <span className="font-serif">{plate.question}</span>
+        <span className="font-serif"><TermScope track="lie"><MathText text={plate.question} terms /></TermScope></span>
       </PageHeader>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -353,7 +355,7 @@ export function PlatePage() {
         <aside className="space-y-4">
           <Card className="p-4" data-testid="a-verifier">
             <SectionTitle className="mb-1.5">À vérifier</SectionTitle>
-            <p className="text-[14px]">{plate.verifier.question}</p>
+            <p className="text-[14px]"><TermScope track="lie"><MathText text={plate.verifier.question} terms /></TermScope></p>
             {revealed ? (
               <p className="mt-2 text-[14px]" style={{ color: 'var(--st-proved)' }} data-testid="reponse">
                 {plate.verifier.reponse}
@@ -366,8 +368,8 @@ export function PlatePage() {
           </Card>
           <Card className="p-4 space-y-4">
             <p className="font-mono text-[11px] uppercase tracking-wider text-text-3">Texte de la planche, cité tel quel</p>
-            <Quoted title="Lire le dessin">{plate.lecture}</Quoted>
-            <Quoted title="D’où vient la formule ?">{plate.origine}</Quoted>
+            <Quoted title="Lire le dessin"><TermScope track="lie"><MathText text={plate.lecture} terms /></TermScope></Quoted>
+            <Quoted title="D’où vient la formule ?"><TermScope track="lie"><MathText text={plate.origine} terms /></TermScope></Quoted>
           </Card>
           <Card className="p-4">
             <SectionTitle className="mb-1.5">Dans le cours</SectionTitle>

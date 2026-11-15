@@ -83,8 +83,9 @@ describe('Laboratoire E — rendu', () => {
     expect(screen.getAllByText(/tronquée/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Rien n’est encore démontré/)).toBeInTheDocument();
     expect(screen.getByText('Écart avec le polycopié')).toBeInTheDocument();
-    // La preuve de l'étape 1 est jouable.
-    expect(screen.getByText('Hypothèses et données')).toBeInTheDocument();
+    // La preuve de l'étape 1 est jouable (éditeur par blocs, vue par défaut).
+    expect(screen.getByTestId('editeur-blocs')).toBeInTheDocument();
+    expect(screen.getByText('À démontrer')).toBeInTheDocument();
     for (let k = 1; k <= 10; k++) expect(screen.getByTestId(`viz-${k}`)).toHaveAttribute('data-state', 'verrouillee');
     fireEvent.click(screen.getByTestId('frise-2'));
     expect(screen.getByTestId('etape-verrouillee')).toBeInTheDocument();

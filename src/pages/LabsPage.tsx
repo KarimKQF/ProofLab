@@ -11,6 +11,7 @@ export const LAB_LIST = [
   { id: 'galerkin', tag: 'E', title: 'Méthode de Galerkin', body: String.raw`Le problème parabolique sur $]0,1[$, en dix étapes de preuve qui déverrouillent chacune une visualisation.` },
   { id: 'sobolev-trace', tag: 'F', title: 'Sobolev et traces', body: String.raw`Surface, niveaux, coupes et trace sur les quatre côtés du carré : ce que dit $\gamma:H^1(\Omega)\to H^{1/2}(\partial\Omega)$, et pourquoi $H^1$ n'est pas dans $L^\infty$ en dimension 2.` },
   { id: 'groupes-lie', tag: 'G', title: 'Groupes de Lie', body: String.raw`Commutateur de flots, exponentielle, Rodrigues, revêtement $SU(2)\to SO(3)$, orbites et stabilisateurs, intégration symplectique : six scènes reliées aux résultats 35 à 45 et aux planches de l’atlas.` },
+  { id: 'demonstration', tag: 'H', title: 'Démonstration', body: 'On ne manipule que les démonstrations des énoncés : la preuve s’écrit en blocs logiques (Soit / Supposons, implication, théorème, calcul, contradiction, conclusion), avec un guide de preuve, des coups de pouce calculés et le plan.' },
 ];
 
 export function LabsPage() {

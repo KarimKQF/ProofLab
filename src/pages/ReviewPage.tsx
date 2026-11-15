@@ -84,7 +84,7 @@ export function ReviewPage() {
                         <span className="font-medium"><MathText text={concept?.label ?? id} /></span>
                         <span className="tabular text-miss">{c.count}</span>
                       </div>
-                      {concept && <p className="text-[12.5px] text-text-2"><MathText text={concept.reminder} /></p>}
+                      {concept && <p className="text-[12.5px] text-text-2"><MathText text={concept.reminder} terms /></p>}
                     </li>
                   );
                 })}

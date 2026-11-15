@@ -64,9 +64,13 @@ KaTeX ne connaît pas `\operatorname*` partout ni les macros non standard : le t
 
 ## Vérification (obligatoire avant de terminer)
 
-Depuis la racine du projet, avec Node.js installé (ou `export PATH="$PWD/.tools/node:$PATH"` pour une installation portable locale) :
+Avec Node portable : `export PATH="$PWD/.tools/node:$PATH"`, depuis la racine du projet :
 
 - `npx vitest run src/tests/content -t "<id-du-theoreme>"` : validation de votre module ;
 - `npx tsc --noEmit` : aucune erreur de type.
 
 Le validateur contrôle : conformité au schéma, compilation LaTeX, vocabulaire, cohérence des identifiants, but dérivable, distracteurs non dérivables, hypothèses nécessaires, résultats disponibles, grille à 100 points, indices distincts, auto-validation des calculs fermés. Il ne juge pas la vérité mathématique : c'est à vous de la garantir, étape par étape.
+
+## Ajouter une notion au dictionnaire
+
+Une notion employée dans un énoncé devient cliquable si une entrée de `src/content/dictionnaire/` la déclare dans ses `forms` (en minuscules : singulier, pluriel, féminin). Préférer une forme longue précise (« opérateur fermé ») à un mot isolé ambigu ; réserver une entrée à un parcours (`track: 'analyse'` ou `'lie'`) quand le même mot a deux sens. Une définition déjà présente dans le carnet se reprend par `from: '<id>'`. Vérifier avec `npx vitest run src/tests/content/dictionnaire.test.ts`. Détails : `docs/DICTIONNAIRE_ET_BLOCS.md`.
