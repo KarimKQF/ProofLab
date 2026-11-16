@@ -75,6 +75,45 @@ const ExamRecordSchema = z.object({
   durationMs: z.number(),
 });
 
+/** Nature d'une erreur, pour le bilan des pièges. */
+export const ERROR_KINDS = ['affirmation-fausse', 'justification-invalide', 'hypothese-non-verifiee', 'resultat-indisponible', 'autre'] as const;
+export type ErrorKind = (typeof ERROR_KINDS)[number];
+
+const ErrorEventSchema = z.object({
+  at: z.number(),
+  concept: z.string(),
+  /** Où l'erreur a eu lieu : preuve d'un exercice, mode « Trouver l'erreur », contre-exemple. */
+  source: z.enum(['preuve', 'trouver-erreur', 'contre-exemple']),
+  /** Exercice, démonstration fautive ou contre-exemple concerné. */
+  ref: z.string(),
+  node: z.string().optional(),
+  kind: z.enum(ERROR_KINDS),
+});
+
+const HuntRecordSchema = z.object({
+  attempts: z.number().int(),
+  /** L'étape fautive a été trouvée sans l'afficher. */
+  found: z.boolean(),
+  /** Étape et nature trouvées du premier coup. */
+  firstTry: z.boolean(),
+  lastAt: z.number(),
+});
+
+/** Carte de révision d'une notion du dictionnaire. */
+const NotionCardSchema = z.object({
+  srs: SrsCardSchema,
+  addedAt: z.number(),
+  /** consultée dans un énoncé, rencontrée dans une erreur, ajoutée à la main. */
+  origin: z.enum(['consultee', 'piege', 'manuelle']),
+  /** Nombre d'erreurs rattachées à cette notion : priorité de révision. */
+  stumbles: z.number().int(),
+  reviews: z.number().int(),
+  lapses: z.number().int(),
+});
+
+/** Nombre maximal d'erreurs conservées dans le journal (les plus récentes). */
+export const ERROR_LOG_MAX = 500;
+
 export const SaveSchema = z.object({
   schemaVersion: z.literal(SCHEMA_VERSION),
   createdAt: z.number(),
@@ -87,12 +126,20 @@ export const SaveSchema = z.object({
   counterexamples: z.record(z.object({ attempts: z.number().int(), solved: z.boolean(), lastAt: z.number() })),
   exams: z.array(ExamRecordSchema),
   lastVisited: z.string().nullable(),
+  // Ajouts du 16 novembre 2026 : absents des sauvegardes plus anciennes, d'où les valeurs par défaut.
+  errorHunt: z.record(HuntRecordSchema).default({}),
+  errorLog: z.array(ErrorEventSchema).default([]),
+  notions: z.record(NotionCardSchema).default({}),
 });
 
 export type SaveData = z.infer<typeof SaveSchema>;
 export type Settings = SaveData['settings'];
 export type Draft = SaveData['drafts'][string];
 export type ExamRecord = SaveData['exams'][number];
+export type ErrorEvent = SaveData['errorLog'][number];
+export type HuntRecord = SaveData['errorHunt'][string];
+export type NotionCard = SaveData['notions'][string];
+export type NotionOrigin = NotionCard['origin'];
 
 export const defaultSettings = (): Settings => ({
   theme: 'dark',
@@ -115,6 +162,9 @@ export const emptySave = (now: number): SaveData => ({
   counterexamples: {},
   exams: [],
   lastVisited: null,
+  errorHunt: {},
+  errorLog: [],
+  notions: {},
 });
 
 export function ensureExercise(save: SaveData, id: string): ExerciseProgress {

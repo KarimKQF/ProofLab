@@ -85,6 +85,11 @@ describe('Blocs — modèle', () => {
   });
 });
 
+/** Le laboratoire s'ouvre sur la preuve modèle (effacement progressif) : passer à la page blanche. */
+function pageBlanche() {
+  fireEvent.click(document.querySelector('[data-effacement="blanche"]')!);
+}
+
 /** Ajoute un bloc d'étape et le remplit : affirmation, prémisses, justification, vérification. */
 function playBlock(index: number, kind: string, node: string, premises: string[], by: string) {
   fireEvent.click(screen.getByTestId(`ajouter-${kind}`));
@@ -109,6 +114,7 @@ describe('Laboratoire H — démonstration en blocs', () => {
         </GlossaryProvider>
       </MemoryRouter>,
     );
+    pageBlanche();
     expect(screen.getByRole('heading', { level: 1, name: 'Démonstration' })).toBeInTheDocument();
     expect(screen.getByTestId('editeur-blocs')).toBeInTheDocument();
 
@@ -157,6 +163,7 @@ describe('Laboratoire H — démonstration en blocs', () => {
         </GlossaryProvider>
       </MemoryRouter>,
     );
+    pageBlanche();
     fireEvent.click(screen.getByTestId('ajouter-intro'));
     fireEvent.click(screen.getByTestId('introduire-abs'));
     playBlock(1, 'deduction', 'neg', ['abs'], 'j-negation');
@@ -178,6 +185,7 @@ describe('Laboratoire H — démonstration en blocs', () => {
         </GlossaryProvider>
       </MemoryRouter>,
     );
+    pageBlanche();
     fireEvent.click(screen.getByTestId('que-etablir'));
     const steps = screen.getByTestId('etapes-possibles');
     expect(steps.querySelector('[data-etape-possible="neg"]')).not.toBeNull();

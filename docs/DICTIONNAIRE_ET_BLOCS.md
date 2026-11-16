@@ -63,7 +63,7 @@ Ajouter une entrée dans le fichier du domaine, avec des formes en minuscules (s
 - Chaque bloc d'étape est exactement une étape (affirmation, prémisses, justification) du moteur : la vue ne change rien à ce qui est validé.
 - Les faits sont repérés comme dans une preuve écrite : H1, H2… pour les hypothèses, (3) pour le bloc 3. Un bloc validé se replie en « De (3) et H2, car … ⟹ affirmation ».
 - « Lire la démonstration rédigée » donne la preuve en phrases numérotées.
-- La vue « Graphe des dépendances » (l'ancien atelier) reste disponible : les deux vues partagent la même session ; le choix est conservé (`prooflab:preuve:vue`).
+- La vue « Graphe des dépendances » montre la même preuve comme un schéma, de haut en bas : la bande des hypothèses et données (H1, H2… ; S1… pour les objets introduits), puis les étapes par niveaux, numérotées dans l'ordre de lecture, jusqu'au but, toujours en bas (en pointillé tant qu'il n'est pas posé). Une flèche A → B signifie que B est obtenue à partir de A ; les hypothèses utilisées sont rappelées sur chaque carte. La mise en page est calculée (`src/components/proof/graph-layout.ts`, méthode par niveaux) : une étape est placée sous ses prémisses et près de son usage, une étape qui ne sert encore à rien attend au-dessus du but, l'ordre des cartes limite les croisements, et une flèche qui saute des niveaux passe entre les cartes, jamais derrière. Survoler une étape met en évidence ce dont elle dépend et ce qu'elle sert à établir, avec une fiche (énoncé complet, justification) ; la sélection garde la mise en évidence et ouvre l'inspecteur, à droite. Les deux vues partagent la même session ; le choix est conservé (`prooflab:preuve:vue`).
 
 ### Guide de preuve
 
@@ -76,6 +76,8 @@ Ajouter une entrée dans le fichier du domaine, avec des formes en minuscules (s
 - Liste des 41 démonstrations jouables (exercices et variantes dont le but est l'énoncé même), pour 30 des 45 résultats ; les 15 autres résultats n'ont que des exercices d'application, et leur démonstration est décrite dans leur fiche.
 - Bac à sable : le brouillon est conservé (`labo:demonstration:<exercice>`), mais aucune tentative ni erreur n'entre dans la progression.
 - Chaque fiche de résultat qui a une démonstration jouable propose « Laboratoire de démonstration ».
+
+Depuis le 16 novembre 2026 : effacement progressif (preuve modèle, justifications, étapes effacées, page blanche) et une démonstration jouable pour chacun des 45 résultats ; les notions consultées entrent dans les révisions. Voir `docs/ERREURS_ET_REVISIONS.md`.
 
 ## 4. Vérification
 

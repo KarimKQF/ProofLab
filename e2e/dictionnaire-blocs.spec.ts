@@ -101,6 +101,10 @@ test('laboratoire H : démonstration par l’absurde en blocs, guide et rédacti
   await expect(page.getByRole('heading', { level: 1, name: 'Démonstration' })).toBeVisible();
   await page.locator('[data-demo="poincare-wirtinger.intermediaire"]').click();
   await expect(page.getByTestId('editeur-blocs')).toBeVisible();
+  // Le laboratoire s'ouvre sur la preuve modèle (effacement progressif) ; on passe à la page blanche.
+  await expect(page.getByTestId('lecture-guidee')).toBeVisible();
+  await page.locator('[data-effacement="blanche"]').click();
+  await expect(page.getByTestId('bloc-0')).toHaveCount(0);
 
   // Guide : la méthode, puis un coup de pouce calculé.
   await expect(page.locator('[data-methode="absurde"]')).toBeVisible();

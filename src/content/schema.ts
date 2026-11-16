@@ -193,6 +193,30 @@ export const ExerciseSchema = z.object({
   verification: VerificationSchema,
 });
 
+/**
+ * Démonstration d'un résultat, jouable dans le laboratoire de démonstration, pour les
+ * résultats dont les exercices sont tous des applications. Le but est l'énoncé lui-même
+ * (ou, lorsque `scope` vaut « partie », une étape clairement délimitée de sa preuve).
+ */
+export const DemonstrationSchema = z.object({
+  id: Id,
+  theoremId: Id,
+  title: Mixed,
+  statement: Mixed,
+  /** « complete » : le résultat entier ; « partie » : une étape de sa preuve, décrite par `scopeNote`. */
+  scope: z.enum(['complete', 'partie']),
+  scopeNote: Mixed.optional(),
+  source: SourceSchema,
+  /** Outils ou résultats à connaître. */
+  prerequisites: z.array(Id),
+  proof: ProofSpecSchema,
+  /** Plan de la démonstration, étape par étape (guide du laboratoire). */
+  plan: z.array(Mixed).min(2),
+  /** Démonstration rédigée de référence. */
+  solution: Mixed,
+  verification: VerificationSchema,
+});
+
 export const HypothesisSchema = z.object({
   id: Id,
   text: Mixed,
@@ -265,5 +289,6 @@ export type TheoremContent = z.infer<typeof TheoremSchema>;
 export type Definition = z.infer<typeof DefinitionSchema>;
 export type Concept = z.infer<typeof ConceptSchema>;
 export type CounterexampleTask = z.infer<typeof CounterexampleTaskSchema>;
+export type Demonstration = z.infer<typeof DemonstrationSchema>;
 export type Source = z.infer<typeof SourceSchema>;
 export type Verification = z.infer<typeof VerificationSchema>;

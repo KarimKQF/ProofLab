@@ -74,3 +74,7 @@ Le validateur contrôle : conformité au schéma, compilation LaTeX, vocabulaire
 ## Ajouter une notion au dictionnaire
 
 Une notion employée dans un énoncé devient cliquable si une entrée de `src/content/dictionnaire/` la déclare dans ses `forms` (en minuscules : singulier, pluriel, féminin). Préférer une forme longue précise (« opérateur fermé ») à un mot isolé ambigu ; réserver une entrée à un parcours (`track: 'analyse'` ou `'lie'`) quand le même mot a deux sens. Une définition déjà présente dans le carnet se reprend par `from: '<id>'`. Vérifier avec `npx vitest run src/tests/content/dictionnaire.test.ts`. Détails : `docs/DICTIONNAIRE_ET_BLOCS.md`.
+
+## Ajouter une démonstration de résultat
+
+Pour un résultat dont les exercices sont des applications, une démonstration jouable dans le laboratoire H s'ajoute dans `src/content/demonstrations/dNN-<id>.ts` (schéma `DemonstrationSchema`, identifiant `<id>.demonstration`), découverte automatiquement. Le but est l'énoncé lui-même ; si la démonstration n'en couvre qu'une étape, indiquer `scope: 'partie'` et la décrire dans `scopeNote`. Mêmes exigences que pour un exercice (distracteurs avec piège, hypothèses retirables réellement nécessaires, aucun résultat indisponible), plus un piège de circularité pour toute justification qui invoque le résultat lui-même. Vérifier avec `npx vitest run src/tests/content/demonstrations.test.ts`. Détails : `docs/ERREURS_ET_REVISIONS.md`.

@@ -79,7 +79,7 @@ function Task({ task }: { task: CounterexampleTask }) {
             const ok = r.status === 'valide';
             if (r.status !== 'illisible') record(task.id, ok);
             if (ok) setSolved(true);
-            else if (r.status === 'incorrect') recordConceptError(task.concept, `contre-exemple:${task.id}`);
+            else if (r.status === 'incorrect') recordConceptError(task.concept, `contre-exemple:${task.id}`, { source: 'contre-exemple', kind: 'autre' });
           }}
         />
       </Card>

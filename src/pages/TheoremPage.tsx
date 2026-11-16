@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CATALOG_BY_ID, THEOREM_BY_ID, exercisesOf, WORLDS } from '@/content';
+import { CATALOG_BY_ID, DEMONSTRATION_BY_THEOREM, THEOREM_BY_ID, exercisesOf, WORLDS } from '@/content';
 import { LEVEL_LABEL } from '@/content/schema';
 import { AUX_TOOLS, theoremLabel } from '@/content/catalog';
 import { Button, Card, LinkButton, PageHeader, ProgressBar, SectionTitle, formatDate, pdfRef, REVIEW_LABEL, VERIFICATION_LABEL } from '@/components/ui';
@@ -168,6 +168,18 @@ export function TheoremPage() {
                       </li>
                     );
                   })}
+                  {DEMONSTRATION_BY_THEOREM.has(id) && (
+                    <li className="rounded-md border border-line p-3" data-testid="demonstration-resultat">
+                      <span className="font-mono text-[11px] text-text-3">
+                        {DEMONSTRATION_BY_THEOREM.get(id)!.scope === 'complete' ? 'Démonstration du résultat' : 'Étape clé de la démonstration'}
+                      </span>
+                      <div className="font-medium mt-0.5 mb-1"><MathText text={DEMONSTRATION_BY_THEOREM.get(id)!.title} /></div>
+                      <p className="text-[13.5px] text-text-2 mb-2.5">
+                        Les exercices ci-dessus appliquent le résultat ; sa démonstration se construit dans le laboratoire, de la preuve modèle à la page blanche.
+                      </p>
+                      <LinkButton to={`/labo/demonstration?resultat=${id}`}>Laboratoire de démonstration</LinkButton>
+                    </li>
+                  )}
                 </ul>
               )}
             </Card>

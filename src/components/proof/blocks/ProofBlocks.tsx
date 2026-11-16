@@ -31,6 +31,8 @@ import {
   targetCandidates,
   type Block,
   type BlockKind,
+  type FadingLevel,
+  type FadingSeed,
 } from './model';
 import { ProofGuide } from './ProofGuide';
 
@@ -48,18 +50,23 @@ export interface ProofBlocksProps {
   /** Étapes de la démonstration de référence (plan), pour le laboratoire. */
   plan?: readonly string[];
   track?: DicoTrack;
+  /** Effacement progressif : blocs de la preuve modèle, figés ou effacés. */
+  fading?: { level: Exclude<FadingLevel, 'blanche'>; seed: FadingSeed };
 }
 
 type Slot = 'cible' | 'premisses' | 'justification';
 
-export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onHint, solvedSlot, plan, track }: ProofBlocksProps) {
+export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onHint, solvedSlot, plan, track, fading }: ProofBlocksProps) {
   const { graph, analysis, passedChecks, feedback, removed, toggleRemoved } = session;
-  const [blocks, setBlocks] = useState<Block[]>(() => blocksFromGraph(spec, graph));
+  const [blocks, setBlocks] = useState<Block[]>(() =>
+    fading ? fading.seed.blocks.map((b) => ({ ...b, premises: [...b.premises] })) : blocksFromGraph(spec, graph),
+  );
+  const masked = useMemo(() => new Set(fading?.seed.masked ?? []), [fading]);
   const [active, setActive] = useState<string | null>(null);
   const [open, setOpen] = useState<{ key: string; slot: Slot } | null>(null);
   const [introMenu, setIntroMenu] = useState(false);
   const [notice, setNotice] = useState<{ key: string; text: string } | null>(null);
-  const [showProse, setShowProse] = useState(false);
+  const [showProse, setShowProse] = useState(fading?.level === 'lire');
   const [showAll, setShowAll] = useState<Record<string, boolean>>({});
 
   const exam = mode === 'examen';
@@ -70,7 +77,7 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
   const facts = availableFacts(spec, analysis, introduced, removed);
   const locals = spec.nodes.filter((n) => isGiven(n) && n.local);
   const pendingLocals = locals.filter((n) => !introduced.has(n.id));
-  const txt = (id: NodeId) => {
+  const realTxt = (id: NodeId) => {
     const n = nodeOf(spec, id);
     return n ? nodeText(n, passedChecks) : id;
   };
@@ -79,11 +86,21 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
     const m = new Map<NodeId, string>();
     spec.nodes.filter((n) => isGiven(n) && !n.local).forEach((n, i) => m.set(n.id, `H${i + 1}`));
     blocks.forEach((b, i) => {
+      if (b.hole) m.set(b.hole, `(${i + 1})`);
       if (b.node) m.set(b.node, `(${i + 1})`);
     });
     return m;
   }, [spec, blocks]);
   const ref = (id: NodeId) => refs.get(id) ?? '?';
+  // Une étape effacée garde son texte masqué ailleurs tant qu'elle n'est pas reconstruite.
+  const rebuilt = new Set(blocks.filter((b) => b.hole && b.node === b.hole).map((b) => b.node!));
+  const txt = (id: NodeId) =>
+    masked.has(id) && !analysis.grounded.has(id) && !rebuilt.has(id) ? `Étape ${ref(id)} effacée, à reconstruire` : realTxt(id);
+  const usersOf = (id: NodeId) =>
+    blocks
+      .filter((x) => (x.node && x.premises.includes(id)) || (x.hole && !x.node && x.holeUses?.includes(id)))
+      .map((x) => ref(x.node ?? x.hole!))
+      .join(', ');
 
   // Un bloc validé se replie aussitôt : la démonstration reste lisible, et « Modifier » le rouvre.
   useEffect(() => {
@@ -142,6 +159,13 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
     setNotice(null);
     session.verify(b.node, b.premises, b.justification);
     setOpen(null);
+    if (b.hole && b.node !== b.hole) {
+      const users = usersOf(b.hole);
+      setNotice({
+        key: b.key,
+        text: `Ce n’est pas l’étape effacée${users ? ` : ${users} s’appuie sur une autre affirmation` : ''}. Choisis une autre affirmation pour ce bloc.`,
+      });
+    }
   };
 
   const remove = (b: Block) => {
@@ -205,6 +229,18 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
     <div className="grid gap-4 lg:grid-cols-[minmax(230px,270px)_minmax(0,1fr)] xl:grid-cols-[minmax(230px,270px)_minmax(0,1fr)_minmax(270px,320px)]" data-testid="editeur-blocs">
       {/* Palette et faits disponibles */}
       <div className="space-y-4 xl:max-h-[calc(100vh-9rem)] xl:overflow-auto xl:pr-1">
+        {fading ? (
+          <Card className="p-3.5" data-testid="effacement-consigne">
+            <SectionTitle className="mb-1.5">Preuve modèle</SectionTitle>
+            <p className="text-[12.5px] text-text-2">
+              {fading.level === 'lire'
+                ? 'Chaque bloc se lit « de … car … ⟹ affirmation ». Les repères H1, H2… sont les hypothèses, (3) le bloc 3.'
+                : fading.level === 'justifier'
+                  ? 'Pour chaque bloc ouvert, choisis la justification (« car »), puis « Vérifier le bloc ».'
+                  : 'Les blocs marqués « étape effacée » sont à reconstruire : choisis l’affirmation (« alors »), ses prémisses (« si ») et sa justification (« car »).'}
+            </p>
+          </Card>
+        ) : (
         <Card className="p-3.5">
           <SectionTitle className="mb-1.5">Blocs logiques</SectionTitle>
           <p className="mb-2.5 text-[12.5px] text-text-3">Ajoute un bloc, puis complète ses cases : « si », « alors », « car ».</p>
@@ -239,6 +275,7 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
             ))}
           </div>
         </Card>
+        )}
 
         <Card className="p-3.5">
           <SectionTitle className="mb-1.5">Faits disponibles</SectionTitle>
@@ -308,7 +345,9 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
               onRemove={() => remove(b)}
               onMove={(d) => move(b, d)}
               txt={txt}
+              realTxt={realTxt}
               refOf={ref}
+              holeUsers={b.hole ? usersOf(b.hole) : undefined}
             />
           ))}
         </ol>
@@ -321,7 +360,7 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
             <button type="button" className="underline hover:text-text-2 cursor-pointer" onClick={() => setShowProse((v) => !v)} aria-expanded={showProse} data-testid="lire-preuve">
               {showProse ? 'Masquer la rédaction' : 'Lire la démonstration rédigée'}
             </button>
-            {blocks.length > 0 && !solved && (
+            {blocks.length > 0 && !solved && !fading && (
               <button type="button" className="underline hover:text-text-2 cursor-pointer" onClick={resetAll}>
                 Tout effacer
               </button>
@@ -335,7 +374,17 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
 
       {/* Guide */}
       <div className="space-y-4 lg:col-span-2 xl:col-span-1 xl:max-h-[calc(100vh-9rem)] xl:overflow-auto xl:pl-1">
-        {!exam && (
+        {fading?.level === 'lire' && (
+          <Card className="p-3.5" data-testid="lecture-guidee">
+            <SectionTitle className="mb-1.5">Lecture guidée</SectionTitle>
+            <ol className="list-decimal space-y-1 pl-4 text-[13px]">
+              <li>Repère les hypothèses du résultat (H1, H2…) et où chacune sert.</li>
+              <li>Pour chaque bloc : ce qu’il utilise (« de »), ce qui le justifie (« car »), ce qu’il établit.</li>
+              <li>Relis la démonstration rédigée, puis passe à l’étape suivante : retrouver les justifications.</li>
+            </ol>
+          </Card>
+        )}
+        {!exam && fading?.level !== 'lire' && (
           <ProofGuide
             spec={spec}
             session={session}
@@ -346,6 +395,7 @@ export function ProofBlocks({ spec, session, mode, guided, hints, hintLevel, onH
             onHint={onHint}
             plan={mode === 'demo' ? plan : undefined}
             track={track}
+            displayText={fading?.level === 'completer' ? txt : undefined}
           />
         )}
         {!exam && spec.removable.length > 0 && <RemovalPanel spec={spec} session={session} removed={removed} toggle={toggleRemoved} />}
@@ -477,7 +527,11 @@ interface BlockCardProps {
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
   txt: (id: NodeId) => string;
+  /** Texte réel des affirmations (choix de la cible), même pour une étape effacée. */
+  realTxt: (id: NodeId) => string;
   refOf: (id: NodeId) => string;
+  /** Étape effacée : blocs qui l'utilisent. */
+  holeUsers?: string;
 }
 
 /** Repère d'un fait : H2 pour une hypothèse, (3) pour le bloc 3. */
@@ -498,7 +552,9 @@ function BlockCard(p: BlockCardProps) {
   const status = b.kind === 'intro' ? 'hypothese' : b.node ? session.analysis.status[b.node] ?? 'absent' : 'absent';
   const established = b.kind !== 'intro' && b.node ? session.analysis.grounded.has(b.node) : false;
   const verdict = p.feedbackHere ? session.feedback?.verdict : undefined;
-  const collapsed = established && !p.active;
+  // Un bloc figé de la preuve modèle reste replié ; un bloc établi se replie dès qu'on le quitte.
+  const collapsed = Boolean(b.node) && (b.lock === 'tout' || (established && !p.active));
+  const fixed = Boolean(b.lock);
   const [dragOver, setDragOver] = useState(false);
 
   return (
@@ -509,6 +565,8 @@ function BlockCard(p: BlockCardProps) {
       data-node={b.node ?? ''}
       data-status={status}
       data-testid={`bloc-${p.index}`}
+      data-trou={b.hole}
+      data-verrou={b.lock}
     >
       {p.framed && <span aria-hidden className="absolute -left-3 top-0 bottom-0 w-0.5 rounded" style={{ background: 'var(--st-invalid)', opacity: 0.55 }} />}
       {p.frameStart && <div className="mb-1 font-mono text-[10.5px] uppercase tracking-wider" style={{ color: 'var(--st-invalid)' }}>Raisonnement par l’absurde</div>}
@@ -538,9 +596,13 @@ function BlockCard(p: BlockCardProps) {
           </span>
           <span className="flex items-center gap-1.5">
             {b.kind !== 'intro' && b.node && status !== 'absent' && <StatusBadge status={status} />}
-            <IconBtn label="Monter" onClick={() => p.onMove(-1)}>↑</IconBtn>
-            <IconBtn label="Descendre" onClick={() => p.onMove(1)}>↓</IconBtn>
-            <IconBtn label="Retirer le bloc" onClick={p.onRemove} testId={`retirer-bloc-${p.index}`}>×</IconBtn>
+            {!fixed && !b.hole && (
+              <>
+                <IconBtn label="Monter" onClick={() => p.onMove(-1)}>↑</IconBtn>
+                <IconBtn label="Descendre" onClick={() => p.onMove(1)}>↓</IconBtn>
+                <IconBtn label="Retirer le bloc" onClick={p.onRemove} testId={`retirer-bloc-${p.index}`}>×</IconBtn>
+              </>
+            )}
           </span>
         </div>
 
@@ -568,12 +630,22 @@ function BlockCard(p: BlockCardProps) {
               </span>
               <MathText text={p.txt(b.node!)} terms />
             </p>
-            <button type="button" className="text-[12px] text-text-3 underline hover:text-text-2 cursor-pointer" onClick={p.onActivate}>
-              Modifier
-            </button>
+            {!fixed && (
+              <button type="button" className="text-[12px] text-text-3 underline hover:text-text-2 cursor-pointer" onClick={p.onActivate}>
+                Modifier
+              </button>
+            )}
+            {b.lock === 'tout' && !established && (
+              <p className="text-[12px] text-text-3">Bloc de la preuve modèle : il sera établi quand les étapes qu’il utilise le seront.</p>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
+            {b.hole && !established && (
+              <p className="rounded-md border border-dashed border-line bg-surface-2 px-2.5 py-1.5 text-[12.5px] text-text-2" data-testid="trou-consigne">
+                Étape effacée de la preuve modèle, à reconstruire{p.holeUsers ? ` : elle sert à ${p.holeUsers}` : ''}.
+              </p>
+            )}
             <SlotRow label="Si" hint="prémisses">
               {b.premises.length === 0 ? (
                 <span className="text-[13px] text-text-3">aucune prémisse</span>
@@ -587,17 +659,21 @@ function BlockCard(p: BlockCardProps) {
                         <span className="min-w-0 line-clamp-2">
                           <MathText text={p.txt(id)} />
                         </span>
-                        <button type="button" aria-label="Retirer cette prémisse" className="text-text-3 hover:text-invalid cursor-pointer" onClick={() => p.onTogglePremise(id)}>
-                          ×
-                        </button>
+                        {!fixed && (
+                          <button type="button" aria-label="Retirer cette prémisse" className="text-text-3 hover:text-invalid cursor-pointer" onClick={() => p.onTogglePremise(id)}>
+                            ×
+                          </button>
+                        )}
                       </span>
                     </span>
                   ))}
                 </span>
               )}
-              <button type="button" className="ml-1 text-[12px] text-accent hover:underline cursor-pointer" onClick={() => p.onOpen('premisses')} aria-expanded={p.openSlot === 'premisses'} data-testid="ajouter-premisse">
-                + prémisse
-              </button>
+              {!fixed && (
+                <button type="button" className="ml-1 text-[12px] text-accent hover:underline cursor-pointer" onClick={() => p.onOpen('premisses')} aria-expanded={p.openSlot === 'premisses'} data-testid="ajouter-premisse">
+                  + prémisse
+                </button>
+              )}
             </SlotRow>
             {p.openSlot === 'premisses' && (
               <PremisePicker spec={spec} block={b} facts={p.facts} session={session} introduced={p.introduced} txt={p.txt} onToggle={p.onTogglePremise} />
@@ -612,13 +688,13 @@ function BlockCard(p: BlockCardProps) {
               ) : (
                 <span className="text-[13px] text-text-3">à choisir</span>
               )}
-              {b.kind !== 'conclusion' && (
+              {b.kind !== 'conclusion' && !fixed && (
                 <button type="button" className="ml-1 text-[12px] text-accent hover:underline cursor-pointer" onClick={() => p.onOpen('cible')} aria-expanded={p.openSlot === 'cible'} data-testid="choisir-cible">
                   {node ? 'changer' : 'choisir'}
                 </button>
               )}
             </SlotRow>
-            {p.openSlot === 'cible' && <TargetPicker spec={spec} kind={b.kind} visible={p.visible} taken={p.taken} current={b.node} txt={p.txt} showAll={p.showAll} onShowAll={p.onShowAll} onPick={p.onTarget} />}
+            {p.openSlot === 'cible' && <TargetPicker spec={spec} kind={b.kind} visible={p.visible} taken={p.taken} current={b.node} txt={p.realTxt} showAll={p.showAll} onShowAll={p.onShowAll} onPick={p.onTarget} />}
 
             <SlotRow label="car" hint="justification">
               {b.justification ? (

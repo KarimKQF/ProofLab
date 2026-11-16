@@ -63,6 +63,7 @@ export function ProofGuide({
   onHint,
   plan,
   track,
+  displayText,
 }: {
   spec: ProofSpec;
   session: ProofSession;
@@ -74,6 +75,8 @@ export function ProofGuide({
   onHint?: (level: number) => void;
   plan?: readonly string[];
   track?: DicoTrack;
+  /** Texte affiché dans l'analyse à rebours (effacement progressif : étapes effacées masquées). */
+  displayText?: (id: NodeId) => string;
 }) {
   const { analysis, passedChecks } = session;
   const goal = nodeOf(spec, spec.goal)!;
@@ -112,7 +115,7 @@ export function ProofGuide({
         )}
       </Card>
 
-      {coaching && <Coaching spec={spec} session={session} introduced={introduced} txt={txt} plan={plan} />}
+      {coaching && <Coaching spec={spec} session={session} introduced={introduced} txt={txt} chainTxt={displayText ?? txt} plan={plan} />}
 
       {!coaching && hints && (
         <Card className="p-3.5">
@@ -157,12 +160,15 @@ function Coaching({
   session,
   introduced,
   txt,
+  chainTxt,
   plan,
 }: {
   spec: ProofSpec;
   session: ProofSession;
   introduced: ReadonlySet<NodeId>;
   txt: (id: NodeId) => string;
+  /** Texte de l'analyse à rebours, affichée sans demande : peut masquer les étapes effacées. */
+  chainTxt: (id: NodeId) => string;
   plan?: readonly string[];
 }) {
   const { analysis } = session;
@@ -238,7 +244,7 @@ function Coaching({
                 <li key={`${id}-${depth}`} style={{ marginLeft: depth * 10 }} className="rounded-md border border-line p-2">
                   <p>
                     <span className="font-mono text-[10.5px] uppercase tracking-wider text-text-3">{depth === 0 ? 'But ' : 'Il suffit d’établir '}</span>
-                    <MathText text={txt(id)} />
+                    <MathText text={chainTxt(id)} />
                     {done && <span className="ml-1 text-proved">✓</span>}
                   </p>
                   {!done && st && depth === chain.length - 1 && (
@@ -252,7 +258,7 @@ function Coaching({
                             {st.missing.map((m) => (
                               <li key={m}>
                                 <button type="button" className="text-left text-[12.5px] text-accent hover:underline cursor-pointer" onClick={() => setPath((p) => [...p.slice(0, depth), m])}>
-                                  → <MathText text={txt(m)} />
+                                  → <MathText text={chainTxt(m)} />
                                 </button>
                               </li>
                             ))}

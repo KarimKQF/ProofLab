@@ -4,16 +4,67 @@
 import { create } from 'zustand';
 import {
   emptySave,
+  ERROR_LOG_MAX,
   importSave,
   loadSave,
   persistSave,
   type Draft,
+  type ErrorEvent,
+  type ErrorKind,
   type ExamRecord,
+  type NotionOrigin,
   type SaveData,
   type Settings,
 } from './save';
 import { emptyExerciseProgress } from '@/core/progression/mastery';
 import { newCard, qualityOf, reviewCard, shiftDueDates, type AttemptOutcome } from '@/core/progression/srs';
+import { addNotions, removeNotion, reviewNotion } from '@/core/progression/notions';
+import { notionsOfConcept } from '@/content/dictionnaire/concepts-notions';
+
+/** Précisions sur une erreur, pour le journal du bilan des pièges. */
+export interface ErrorDetail {
+  source?: ErrorEvent['source'];
+  node?: string;
+  kind?: ErrorKind;
+}
+
+export interface HuntOutcome {
+  /** Étape fautive trouvée par le joueur (sans l'afficher). */
+  found: boolean;
+  /** Étape et nature trouvées du premier coup. */
+  firstTry: boolean;
+  /** Erreur manquée : une étape correcte désignée, ou la réponse affichée. */
+  missed: boolean;
+  concept: string;
+  kind: ErrorKind;
+  exerciseId: string;
+}
+
+/** Enregistre une erreur : compteur du concept, journal, et notions à revoir. */
+function withError(s: SaveData, concept: string, ref: string, exerciseRef: string, detail: ErrorDetail, now: number): SaveData {
+  const c = s.conceptErrors[concept] ?? { count: 0, lastAt: now, exercises: [] };
+  const event: ErrorEvent = {
+    at: now,
+    concept,
+    source: detail.source ?? 'preuve',
+    ref,
+    kind: detail.kind ?? 'autre',
+    ...(detail.node ? { node: detail.node } : {}),
+  };
+  return {
+    ...s,
+    conceptErrors: {
+      ...s.conceptErrors,
+      [concept]: {
+        count: c.count + 1,
+        lastAt: now,
+        exercises: c.exercises.includes(exerciseRef) ? c.exercises : [...c.exercises, exerciseRef],
+      },
+    },
+    errorLog: [...s.errorLog, event].slice(-ERROR_LOG_MAX),
+    notions: addNotions(s.notions, notionsOfConcept(concept), 'piege', now),
+  };
+}
 
 interface GameState {
   ready: boolean;
@@ -25,7 +76,11 @@ interface GameState {
   setPaused: (paused: boolean) => void;
 
   recordAttempt: (exerciseId: string, outcome: AttemptOutcome, opts?: { variant?: boolean }) => void;
-  recordConceptError: (concept: string, exerciseId: string) => void;
+  recordConceptError: (concept: string, exerciseId: string, detail?: ErrorDetail) => void;
+  recordHunt: (itemId: string, outcome: HuntOutcome) => void;
+  addNotion: (id: string, origin: NotionOrigin) => void;
+  removeNotion: (id: string) => void;
+  reviewNotion: (id: string, q: number) => void;
   markSolutionViewed: (exerciseId: string) => void;
   setDraft: (key: string, draft: Draft | null) => void;
   setLastVisited: (path: string) => void;
@@ -102,6 +157,7 @@ export const useGame = create<GameState>((set, get) => {
         return {
           ...s,
           exercises: shiftDueDates(s.exercises, delta),
+          notions: shiftDueDates(s.notions, delta),
           settings: { ...s.settings, pausedSince: null },
         };
       });
@@ -139,26 +195,65 @@ export const useGame = create<GameState>((set, get) => {
       });
     },
 
-    recordConceptError: (concept, exerciseId) => {
+    recordConceptError: (concept, exerciseId, detail = {}) => {
       const now = get().now();
       update((s) => {
-        const c = s.conceptErrors[concept] ?? { count: 0, lastAt: now, exercises: [] };
+        const next = withError(s, concept, exerciseId, exerciseId, detail, now);
         const prev = s.exercises[exerciseId] ?? emptyExerciseProgress();
         return {
-          ...s,
-          conceptErrors: {
-            ...s.conceptErrors,
-            [concept]: {
-              count: c.count + 1,
-              lastAt: now,
-              exercises: c.exercises.includes(exerciseId) ? c.exercises : [...c.exercises, exerciseId],
-            },
-          },
+          ...next,
           exercises: {
             ...s.exercises,
             [exerciseId]: { ...prev, errors: { ...prev.errors, [concept]: (prev.errors[concept] ?? 0) + 1 } },
           },
         };
+      });
+    },
+
+    // « Trouver l'erreur » : une erreur manquée compte comme une erreur sur son concept,
+    // sans toucher à la progression des exercices.
+    recordHunt: (itemId, outcome) => {
+      const now = get().now();
+      update((s) => {
+        const prev = s.errorHunt[itemId] ?? { attempts: 0, found: false, firstTry: false, lastAt: now };
+        const base: SaveData = {
+          ...s,
+          errorHunt: {
+            ...s.errorHunt,
+            [itemId]: {
+              attempts: prev.attempts + 1,
+              found: prev.found || outcome.found,
+              firstTry: prev.firstTry || outcome.firstTry,
+              lastAt: now,
+            },
+          },
+        };
+        return outcome.missed
+          ? withError(base, outcome.concept, itemId, outcome.exerciseId, { source: 'trouver-erreur', kind: outcome.kind }, now)
+          : base;
+      });
+    },
+
+    addNotion: (id, origin) => {
+      const now = get().now();
+      update((s) => {
+        const notions = addNotions(s.notions, [id], origin, now);
+        return notions === s.notions ? s : { ...s, notions };
+      });
+    },
+
+    removeNotion: (id) =>
+      update((s) => {
+        const notions = removeNotion(s.notions, id);
+        return notions === s.notions ? s : { ...s, notions };
+      }),
+
+    reviewNotion: (id, q) => {
+      const now = get().now();
+      update((s) => {
+        const card = s.notions[id];
+        if (!card) return s;
+        return { ...s, notions: { ...s.notions, [id]: reviewNotion(card, q, now) } };
       });
     },
 

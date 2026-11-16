@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CATALOG_BY_ID, CONCEPT_BY_ID, EXERCISE_BY_ID } from '@/content';
 import { LEVEL_LABEL } from '@/content/schema';
@@ -7,6 +7,7 @@ import { MathText } from '@/components/Math';
 import { useGame } from '@/storage/store';
 import { useReviewQueue } from '@/components/useReviewQueue';
 import { toRedoWithoutHints } from '@/core/progression/mastery';
+import { NotionReview, notionLabel, useNotionQueue } from '@/components/NotionReview';
 
 const KIND_LABEL = { revision: 'Reprise', variante: 'Variante', reutilisation: 'Réutilisation' } as const;
 
@@ -16,6 +17,9 @@ export function ReviewPage() {
   const conceptErrors = useGame((s) => s.save.conceptErrors);
   const pausedSince = useGame((s) => s.save.settings.pausedSince);
   const setPaused = useGame((s) => s.setPaused);
+  const deck = useGame((s) => s.save.notions);
+  const notionsDue = useNotionQueue();
+  const [reviewing, setReviewing] = useState(false);
 
   const redo = useMemo(() => toRedoWithoutHints(exercises).filter((id) => EXERCISE_BY_ID.has(id)), [exercises]);
   const fragile = useMemo(
@@ -41,6 +45,38 @@ export function ReviewPage() {
       )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-5">
+        {reviewing ? (
+          <NotionReview onClose={() => setReviewing(false)} />
+        ) : (
+          <Card className="p-5" data-testid="notions-a-revoir">
+            <SectionTitle className="mb-1.5">Notions à revoir ({notionsDue.length})</SectionTitle>
+            {Object.keys(deck).length === 0 ? (
+              <p className="text-sm text-text-2">
+                Aucune notion dans tes révisions. Une notion y entre quand tu la consultes en lisant un énoncé, quand une erreur s’y rattache, ou quand tu l’ajoutes depuis sa fiche du dictionnaire.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-text-2">
+                  {Object.keys(deck).length} notion{Object.keys(deck).length > 1 ? 's' : ''} dans tes révisions. Celles liées à une erreur passent en premier. On se pose la question, on répond de mémoire, puis on compare avec la fiche.
+                </p>
+                {notionsDue.length > 0 ? (
+                  <>
+                    <p className="mt-2 text-[13px] text-text-3">
+                      {notionsDue.slice(0, 6).map(notionLabel).join(' · ')}
+                      {notionsDue.length > 6 ? ' …' : ''}
+                    </p>
+                    <Button variant="primary" className="mt-3" onClick={() => setReviewing(true)} disabled={pausedSince !== null} data-testid="reviser-notions-maintenant">
+                      Réviser les notions
+                    </Button>
+                  </>
+                ) : (
+                  <p className="mt-2 text-[13px] text-text-3">Rien n’est dû maintenant.</p>
+                )}
+              </>
+            )}
+          </Card>
+        )}
         <Card className="p-5">
           <SectionTitle className="mb-3">À réviser maintenant ({queue.length})</SectionTitle>
           {queue.length === 0 ? (
@@ -68,10 +104,14 @@ export function ReviewPage() {
             </ul>
           )}
         </Card>
+        </div>
 
         <div className="space-y-5">
           <Card className="p-5">
-            <SectionTitle className="mb-2">Concepts fragiles</SectionTitle>
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <SectionTitle>Concepts fragiles</SectionTitle>
+              <Link className="text-[12.5px] text-accent hover:underline" to="/pieges">Bilan →</Link>
+            </div>
             {fragile.length === 0 ? (
               <p className="text-sm text-text-2">Aucune erreur conceptuelle enregistrée.</p>
             ) : (

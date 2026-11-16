@@ -9,8 +9,10 @@ import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { DICO_BY_ID, linkHtml, matcherFor, symbolsFor, texKey, type DicoTrack } from '@/content/dictionnaire';
 import { MathText } from '@/components/Math';
+import { useGame } from '@/storage/store';
 import { TermLinkerContext, type TermLinker } from './context';
 import { EntryView } from './EntryView';
+import { NotionStatus } from './NotionStatus';
 
 interface OpenState {
   stack: string[];
@@ -44,12 +46,14 @@ export function GlossaryProvider({ children }: { children: ReactNode }) {
       if (!id || !DICO_BY_ID.has(id)) return;
       const t = el.dataset.track;
       const track = t && TRACKS.has(t) ? (t as DicoTrack) : undefined;
-      if (el.closest('[data-glossary-popover]')) {
-        setOpen((s) => (s ? { ...s, stack: [...s.stack, id] } : s));
-        return;
-      }
       if (el.closest('[data-glossary-page]')) {
         navigate(`/dictionnaire/${id}`);
+        return;
+      }
+      // Une notion consultée en lisant entre dans les révisions (première révision le lendemain).
+      useGame.getState().addNotion(id, 'consultee');
+      if (el.closest('[data-glossary-popover]')) {
+        setOpen((s) => (s ? { ...s, stack: [...s.stack, id] } : s));
         return;
       }
       setOpen({ stack: [id], trigger: el, track });
@@ -206,10 +210,13 @@ function TermPopover({ state, onClose, onBack }: { state: OpenState; onClose: ()
         </button>
       </div>
       <EntryView entry={entry} compact track={state.track} />
-      <div className="mt-4 border-t border-line pt-2.5">
+      <div className="mt-4 space-y-1 border-t border-line pt-2.5">
         <Link to={`/dictionnaire/${entry.id}`} className="text-[13px] text-accent hover:underline" data-testid="ouvrir-dictionnaire">
           Ouvrir dans le dictionnaire →
         </Link>
+        <div>
+          <NotionStatus id={entry.id} />
+        </div>
       </div>
     </div>
   );

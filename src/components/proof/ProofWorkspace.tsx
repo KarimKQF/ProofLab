@@ -5,19 +5,20 @@
  * - « Graphe » : banque de propositions, graphe des dépendances, inspecteur d'étape.
  * Rien n'est validé sans une règle établie par le moteur, quelle que soit la vue.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { ProofSpec } from '@/content/schema';
 import { NODE_KIND_LABEL } from '@/content/schema';
 import { isGiven, visibleNodes, type NodeId } from '@/core/proof-engine/engine';
 import type { DicoTrack } from '@/content/dictionnaire/types';
-import { Button, Card, cx, SectionTitle, STATUS_META, StatusBadge, StatusLegend } from '@/components/ui';
+import { Button, Card, cx, SectionTitle, StatusBadge, StatusLegend } from '@/components/ui';
 import { MathText } from '@/components/Math';
-import { ProofGraph } from './ProofGraph';
+import { ProofGraph, useGraphModel } from './ProofGraph';
 import { CheckInput } from './CheckInput';
 import { RemovalPanel } from './RemovalPanel';
 import { nodeText } from './text';
 import { type AttemptStats, type Feedback, useProofSession, type ProofSession } from './useProofSession';
 import { ProofBlocks } from './blocks/ProofBlocks';
+import type { FadingLevel, FadingSeed } from './blocks/model';
 
 export type WorkspaceMode = 'guide' | 'examen' | 'labo' | 'demo';
 
@@ -39,6 +40,8 @@ export interface WorkspaceProps {
   plan?: readonly string[];
   /** Parcours du résultat, pour les notions du dictionnaire. */
   track?: DicoTrack;
+  /** Effacement progressif (laboratoire de démonstration) : preuve modèle partiellement effacée. */
+  fading?: { level: Exclude<FadingLevel, 'blanche'>; seed: FadingSeed };
 }
 
 const HINT_NAMES = ['Orientation', 'Structure', 'Déblocage'];
@@ -55,7 +58,15 @@ function readView(): View {
 
 export function ProofWorkspace(props: WorkspaceProps) {
   const { spec, allowed, draftKey, errorKey, onSolved, onUnlocks, onSession, onHintUsed } = props;
-  const session = useProofSession({ spec, allowed, draftKey, errorKey, onUnlocks, onGoalReached: onSolved });
+  const session = useProofSession({
+    spec,
+    allowed,
+    draftKey,
+    errorKey,
+    onUnlocks,
+    onGoalReached: onSolved,
+    initial: props.fading ? { graph: props.fading.seed.graph, passedChecks: props.fading.seed.passedChecks } : undefined,
+  });
   const [view, setView] = useState<View>(readView);
 
   useEffect(() => {
@@ -75,6 +86,24 @@ export function ProofWorkspace(props: WorkspaceProps) {
       /* préférence non conservée */
     }
   };
+
+  // L'effacement progressif se joue en blocs : la preuve modèle y garde sa mise en page.
+  if (props.fading) {
+    return (
+      <ProofBlocks
+        spec={spec}
+        session={session}
+        mode={props.mode}
+        guided={props.guided}
+        hintLevel={session.hints}
+        onHint={showHint}
+        solvedSlot={props.solvedSlot}
+        plan={props.plan}
+        track={props.track}
+        fading={props.fading}
+      />
+    );
+  }
 
   return (
     <div>
@@ -125,6 +154,8 @@ function GraphView(props: WorkspaceProps & { session: ProofSession; showHint: (l
 
   const [selected, setSelected] = useState<NodeId | null>(null);
   const hintLevel = session.hints;
+  const model = useGraphModel(spec, graph);
+  const inspectorRef = useRef<HTMLDivElement>(null);
 
   const solved = analysis.goalReached && removed.size === 0;
 
@@ -133,146 +164,149 @@ function GraphView(props: WorkspaceProps & { session: ProofSession; showHint: (l
     [spec, analysis, graph.placed, guided, mode],
   );
 
-  const givenNodes = spec.nodes.filter(isGiven);
   const propositions = spec.nodes.filter((n) => !isGiven(n));
   const hiddenCount = propositions.filter((n) => !visible.has(n.id)).length;
   const selectedNode = selected ? spec.nodes.find((n) => n.id === selected) : undefined;
+  const refOf = (id: NodeId) => model.refs.get(id) ?? '';
+
+  // Sur un écran étroit, l'inspecteur est sous le graphe : on le rapproche après une sélection.
+  const select = (id: NodeId) => {
+    setSelected(id);
+    requestAnimationFrame(() => {
+      const el = inspectorRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (r.top > window.innerHeight || r.bottom < 0) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  };
 
   const pick = (id: NodeId) => {
     place(id);
-    setSelected(id);
+    select(id);
   };
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(300px,360px)]">
-      {/* Banque */}
-      <Card className="p-3.5 xl:max-h-[calc(100vh-11rem)] xl:overflow-auto">
-        <SectionTitle className="mb-2">Hypothèses et données</SectionTitle>
-        <ul className="space-y-1.5 mb-5">
-          {givenNodes.map((n) => {
-            const st = analysis.status[n.id] ?? 'hypothese';
-            return (
-              <li key={n.id} className="rounded-md border border-line px-2.5 py-1.5 text-[13.5px]" style={{ borderLeft: `3px solid ${STATUS_META[st].color}` }}>
-                {n.local && <span className="font-mono text-[10px] uppercase tracking-wider text-text-3 mr-1.5">Locale</span>}
-                <MathText text={n.text} terms />
-              </li>
-            );
-          })}
-        </ul>
-
-        <SectionTitle className="mb-2">Propositions</SectionTitle>
-        <ul className="space-y-1.5">
-          {propositions
-            .filter((n) => visible.has(n.id))
-            .map((n) => {
-              const placed = graph.placed.includes(n.id);
-              return (
-                <li key={n.id}>
-                  <button
-                    type="button"
-                    onClick={() => pick(n.id)}
-                    className={cx(
-                      'w-full text-left rounded-md border px-2.5 py-1.5 text-[13.5px] transition-colors cursor-pointer',
-                      placed ? 'border-line-strong bg-surface-2' : 'border-line hover:bg-surface-2',
-                      n.id === spec.goal && 'border-dashed',
-                    )}
-                    data-testid={`bank-${n.id}`}
-                  >
-                    <span className="flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-wider text-text-3">
-                      <span>{n.id === spec.goal ? 'But' : NODE_KIND_LABEL[n.kind]}</span>
-                      {placed && <span>Posée</span>}
-                    </span>
-                    <MathText text={nodeText(n, passedChecks)} />
-                  </button>
-                </li>
-              );
-            })}
-        </ul>
-        {hiddenCount > 0 && (
-          <p className="mt-3 text-xs text-text-3">
-            {hiddenCount} proposition{hiddenCount > 1 ? 's' : ''} apparaîtr{hiddenCount > 1 ? 'ont' : 'a'} à mesure que tu établis ce dont elle{hiddenCount > 1 ? 's' : ''} dépend{hiddenCount > 1 ? 'ent' : ''}.
-          </p>
-        )}
-      </Card>
-
-      {/* Graphe */}
-      <div className="flex flex-col gap-3 min-w-0">
-        <div className="flex-1 min-h-[420px]">
-          <ProofGraph spec={spec} graph={graph} analysis={analysis} selected={selected} passedChecks={passedChecks} onSelect={setSelected} />
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <StatusLegend />
-          <div className="flex items-center gap-3 font-mono text-[11px] text-text-3">
-            <span data-testid="valid-steps">{session.validSteps} valide{session.validSteps > 1 ? 's' : ''}</span>
-            <span>{refused} refus</span>
-            {graph.placed.length > 0 && !solved && (
-              <button type="button" className="underline hover:text-text-2 cursor-pointer" onClick={reset}>
-                Tout effacer
-              </button>
-            )}
-          </div>
-        </div>
-        {solved && solvedSlot}
-      </div>
-
-      {/* Inspecteur */}
-      <div className="space-y-4 xl:max-h-[calc(100vh-11rem)] xl:overflow-auto">
-        <Inspector
-          key={selected ?? 'none'}
-          spec={spec}
-          session={session}
-          nodeId={selected}
-          onVerify={verify}
-          onRemove={(id) => {
-            removeNode(id);
-            setSelected(null);
-          }}
-          onPassCheck={passCheck}
-          feedback={feedback}
-        />
-
-        {selectedNode === undefined && (
-          <Card className="p-3.5">
-            <p className="text-sm text-text-2">
-              Sélectionne une proposition posée pour indiquer ses prémisses et sa justification.
-            </p>
+    <div className="@container">
+      <div className="grid gap-4 @5xl:grid-cols-[minmax(0,1fr)_300px]">
+        {/* Graphe */}
+        <div className="min-w-0 space-y-3">
+          <Card className="p-3">
+            <ProofGraph spec={spec} graph={graph} analysis={analysis} model={model} selected={selected} passedChecks={passedChecks} onSelect={select} />
           </Card>
-        )}
-
-        {mode === 'guide' && hints && (
-          <Card className="p-3.5">
-            <SectionTitle className="mb-2">Indices</SectionTitle>
-            <div className="space-y-2.5">
-              {[1, 2, 3].map((level) => (
-                <div key={level}>
-                  {hintLevel >= level ? (
-                    <div className="anim-rise">
-                      <div className="font-mono text-[11px] text-text-3 mb-0.5">
-                        {level}. {HINT_NAMES[level - 1]}
-                      </div>
-                      <p className="text-sm">
-                        <MathText text={hints[level - 1]!} terms />
-                      </p>
-                    </div>
-                  ) : (
-                    level === hintLevel + 1 && (
-                      <Button onClick={() => showHint(level)} variant="ghost" className="w-full justify-start">
-                        Indice {level} : {HINT_NAMES[level - 1]}
-                      </Button>
-                    )
-                  )}
-                </div>
-              ))}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <StatusLegend />
+            <div className="flex items-center gap-3 font-mono text-[11px] text-text-3">
+              <span data-testid="valid-steps">{session.validSteps} valide{session.validSteps > 1 ? 's' : ''}</span>
+              <span>{refused} refus</span>
+              {graph.placed.length > 0 && !solved && (
+                <button type="button" className="underline hover:text-text-2 cursor-pointer" onClick={reset}>
+                  Tout effacer
+                </button>
+              )}
             </div>
-            {hintLevel > 0 && (
+          </div>
+          {solved && solvedSlot}
+        </div>
+
+        {/* Banque, inspecteur, indices */}
+        <div className="space-y-4 @5xl:sticky @5xl:top-4 @5xl:max-h-[calc(100vh-2rem)] @5xl:self-start @5xl:overflow-auto @5xl:pr-1">
+          <Card className="p-3.5">
+            <SectionTitle className="mb-1">Propositions à poser</SectionTitle>
+            <p className="mb-2 text-[12px] text-text-3">Une proposition posée apparaît dans le graphe ; sélectionne-la pour choisir ses prémisses et sa justification.</p>
+            <ul className="max-h-[38vh] space-y-1.5 overflow-auto pr-1">
+              {propositions
+                .filter((n) => visible.has(n.id))
+                .map((n) => {
+                  const placed = graph.placed.includes(n.id);
+                  return (
+                    <li key={n.id}>
+                      <button
+                        type="button"
+                        onClick={() => pick(n.id)}
+                        className={cx(
+                          'w-full text-left rounded-md border px-2.5 py-1.5 text-[13px] transition-colors cursor-pointer',
+                          placed ? 'border-line-strong bg-surface-2' : 'border-line hover:bg-surface-2',
+                          n.id === spec.goal && 'border-dashed',
+                        )}
+                        data-testid={`bank-${n.id}`}
+                      >
+                        <span className="flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-wider text-text-3">
+                          <span>{n.id === spec.goal ? 'But' : NODE_KIND_LABEL[n.kind]}</span>
+                          {placed && <span>Posée {refOf(n.id)}</span>}
+                        </span>
+                        <MathText text={nodeText(n, passedChecks)} />
+                      </button>
+                    </li>
+                  );
+                })}
+            </ul>
+            {hiddenCount > 0 && (
               <p className="mt-2 text-xs text-text-3">
-                Les indices restent disponibles : ils déterminent seulement si la réussite compte comme autonome.
+                {hiddenCount} proposition{hiddenCount > 1 ? 's' : ''} apparaîtr{hiddenCount > 1 ? 'ont' : 'a'} à mesure que tu établis ce dont elle{hiddenCount > 1 ? 's' : ''} dépend{hiddenCount > 1 ? 'ent' : ''}.
               </p>
             )}
           </Card>
-        )}
 
-        {mode !== 'examen' && spec.removable.length > 0 && <RemovalPanel spec={spec} session={session} removed={removed} toggle={toggleRemoved} />}
+          <div ref={inspectorRef}>
+            <Inspector
+              key={selected ?? 'none'}
+              spec={spec}
+              session={session}
+              nodeId={selected}
+              refOf={refOf}
+              onVerify={verify}
+              onRemove={(id) => {
+                removeNode(id);
+                setSelected(null);
+              }}
+              onPassCheck={passCheck}
+              feedback={feedback}
+            />
+          </div>
+
+          {selectedNode === undefined && (
+            <Card className="p-3.5">
+              <p className="text-sm text-text-2">
+                Sélectionne une étape du graphe pour indiquer ses prémisses et sa justification.
+              </p>
+            </Card>
+          )}
+
+          {mode === 'guide' && hints && (
+            <Card className="p-3.5">
+              <SectionTitle className="mb-2">Indices</SectionTitle>
+              <div className="space-y-2.5">
+                {[1, 2, 3].map((level) => (
+                  <div key={level}>
+                    {hintLevel >= level ? (
+                      <div className="anim-rise">
+                        <div className="font-mono text-[11px] text-text-3 mb-0.5">
+                          {level}. {HINT_NAMES[level - 1]}
+                        </div>
+                        <p className="text-sm">
+                          <MathText text={hints[level - 1]!} terms />
+                        </p>
+                      </div>
+                    ) : (
+                      level === hintLevel + 1 && (
+                        <Button onClick={() => showHint(level)} variant="ghost" className="w-full justify-start">
+                          Indice {level} : {HINT_NAMES[level - 1]}
+                        </Button>
+                      )
+                    )}
+                  </div>
+                ))}
+              </div>
+              {hintLevel > 0 && (
+                <p className="mt-2 text-xs text-text-3">
+                  Les indices restent disponibles : ils déterminent seulement si la réussite compte comme autonome.
+                </p>
+              )}
+            </Card>
+          )}
+
+          {mode !== 'examen' && spec.removable.length > 0 && <RemovalPanel spec={spec} session={session} removed={removed} toggle={toggleRemoved} />}
+        </div>
       </div>
     </div>
   );
@@ -282,6 +316,7 @@ function Inspector({
   spec,
   session,
   nodeId,
+  refOf,
   onVerify,
   onRemove,
   onPassCheck,
@@ -290,6 +325,8 @@ function Inspector({
   spec: ProofSpec;
   session: ProofSession;
   nodeId: NodeId | null;
+  /** Repères du graphe (H1, S1, (3)…). */
+  refOf: (id: NodeId) => string;
   onVerify: (id: NodeId, premises: NodeId[], justification: string | null) => void;
   onRemove: (id: NodeId) => void;
   onPassCheck: (id: NodeId) => void;
@@ -326,7 +363,7 @@ function Inspector({
     <Card className="p-3.5 anim-rise">
       <div data-testid="inspector">
         <div className="flex items-center justify-between gap-2 mb-1.5">
-          <SectionTitle>Étape</SectionTitle>
+          <SectionTitle>Étape {refOf(nodeId)}</SectionTitle>
           <StatusBadge status={status} />
         </div>
         <p className="text-[14.5px] mb-3">
@@ -350,6 +387,7 @@ function Inspector({
             <li key={c.id}>
               <label className="flex items-start gap-2 text-[13px] cursor-pointer">
                 <input type="checkbox" className="mt-1 shrink-0" checked={premises.includes(c.id)} onChange={() => toggle(c.id)} data-testid={`premise-${c.id}`} />
+                {refOf(c.id) && <span className="mt-px shrink-0 rounded bg-surface-3 px-1 font-mono text-[11px] leading-[18px] text-text-2">{refOf(c.id)}</span>}
                 <span>
                   <MathText text={nodeText(c, passedChecks)} />
                 </span>

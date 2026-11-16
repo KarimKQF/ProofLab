@@ -61,6 +61,7 @@ const MODES = [
   { to: '/carte', title: 'Construction de preuve', body: 'Assemble un graphe de propositions et justifie chaque arête.' },
   { to: '/carte', title: 'Preuve libre', body: 'Rédige ta démonstration en LaTeX ; les limites de l’évaluation sont affichées.' },
   { to: '/contre-exemples', title: 'Contre-exemples', body: 'Trouve l’hypothèse manquante ou construis ce qui fait tomber l’assertion.' },
+  { to: '/trouver-erreur', title: 'Trouver l’erreur', body: 'Une démonstration complète contient une étape fautive : désigne-la et dis ce qui ne va pas.' },
   { to: '/examen', title: 'Examen', body: 'Énoncés nouveaux, sans indice, notés sur une grille à cinq critères.' },
 ];
 
@@ -138,8 +139,8 @@ export function HomePage() {
           </div>
         </div>
 
-        <SectionTitle className="mt-12 mb-3">Cinq manières de travailler</SectionTitle>
-        <ul className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <SectionTitle className="mt-12 mb-3">Six manières de travailler</SectionTitle>
+        <ul className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           {MODES.map((m) => (
             <li key={m.title}>
               <Link to={m.to} className="block h-full rounded-lg border border-line bg-surface p-3.5 hover:border-line-strong transition-colors">

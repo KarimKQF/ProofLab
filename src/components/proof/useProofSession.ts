@@ -43,22 +43,28 @@ export interface ProofSessionOptions {
   onUnlocks?: (keys: string[]) => void;
   /** Appelé une seule fois par tentative, lorsqu'une vérification du joueur atteint le but. */
   onGoalReached?: (stats: AttemptStats) => void;
+  /** Point de départ imposé (effacement progressif), utilisé en l'absence de brouillon. */
+  initial?: { graph: PlayerGraph; passedChecks: readonly NodeId[] };
 }
 
 function countValid(spec: ProofSpec, graph: PlayerGraph, analysis: GraphAnalysis): number {
   return graph.placed.filter((id) => analysis.verdicts[id]?.status === 'valide' && !isGiven(nodeMap(spec).get(id)!)).length;
 }
 
-export function useProofSession({ spec, allowed, draftKey, errorKey, onUnlocks, onGoalReached }: ProofSessionOptions) {
+export function useProofSession({ spec, allowed, draftKey, errorKey, onUnlocks, onGoalReached, initial }: ProofSessionOptions) {
   const draft = useGame((s) => (draftKey ? s.save.drafts[draftKey] : undefined));
   const setDraft = useGame((s) => s.setDraft);
   const recordConceptError = useGame((s) => s.recordConceptError);
   const now = useGame((s) => s.now);
 
   const [graph, setGraph] = useState<PlayerGraph>(() =>
-    draft ? { placed: [...draft.graph.placed], steps: { ...draft.graph.steps } } : emptyGraph(),
+    draft
+      ? { placed: [...draft.graph.placed], steps: { ...draft.graph.steps } }
+      : initial
+        ? { placed: [...initial.graph.placed], steps: { ...initial.graph.steps } }
+        : emptyGraph(),
   );
-  const [passedChecks, setPassedChecks] = useState<Set<NodeId>>(() => new Set(draft?.passedChecks ?? []));
+  const [passedChecks, setPassedChecks] = useState<Set<NodeId>>(() => new Set(draft?.passedChecks ?? initial?.passedChecks ?? []));
   const [refused, setRefused] = useState(draft?.refused ?? 0);
   const [hints, setHints] = useState(draft?.hints ?? 0);
   const [removed, setRemoved] = useState<Set<NodeId>>(new Set());
@@ -129,7 +135,7 @@ export function useProofSession({ spec, allowed, draftKey, errorKey, onUnlocks, 
       if (next.cycles.some((c) => c.includes(id))) {
         setFeedback({ node: id, verdict: { status: 'circulaire', message: CIRCULAR_MESSAGE } });
         setRefused((r) => r + 1);
-        if (errorKey) recordConceptError('circularite', errorKey);
+        if (errorKey) recordConceptError('circularite', errorKey, { node: id, kind: 'resultat-indisponible' });
         return;
       }
       setFeedback({ node: id, verdict });
@@ -138,7 +144,15 @@ export function useProofSession({ spec, allowed, draftKey, errorKey, onUnlocks, 
         setRefused((r) => r + 1);
         const concept =
           verdict.status === 'incorrect' ? verdict.concept : verdict.reason === 'piege' ? verdict.trap?.concept : undefined;
-        if (concept && errorKey) recordConceptError(concept, errorKey);
+        if (concept && errorKey) {
+          const kind =
+            verdict.status === 'incorrect' && verdict.reason === 'utilisation-prematuree'
+              ? 'resultat-indisponible'
+              : nodeMap(spec).get(id)?.distractor
+                ? 'affirmation-fausse'
+                : 'justification-invalide';
+          recordConceptError(concept, errorKey, { node: id, kind });
+        }
       }
       if (next.goalReached && removed.size === 0 && !attemptCounted.current) {
         attemptCounted.current = true;

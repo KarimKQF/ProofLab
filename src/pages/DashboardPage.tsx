@@ -108,7 +108,10 @@ export function DashboardPage() {
             )}
           </Card>
           <Card className="p-5">
-            <SectionTitle className="mb-2">Concepts à consolider</SectionTitle>
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <SectionTitle>Concepts à consolider</SectionTitle>
+              <Link className="text-[12.5px] text-accent hover:underline" to="/pieges" data-testid="lien-bilan">Bilan des pièges →</Link>
+            </div>
             {Object.keys(conceptErrors).length === 0 ? (
               <p className="text-sm text-text-2">Aucune erreur conceptuelle enregistrée.</p>
             ) : (

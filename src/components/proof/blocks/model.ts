@@ -6,6 +6,7 @@
  */
 import type { ProofNodeSpec, ProofSpec, RuleSpec } from '@/content/schema';
 import { isGiven, type GraphAnalysis, type NodeId, type PlayerGraph } from '@/core/proof-engine/engine';
+import { checksOf, localsOf, referenceDerivation } from '@/core/proof-engine/reference';
 
 export type BlockKind = 'intro' | 'deduction' | 'theoreme' | 'calcul' | 'absurde' | 'conclusion';
 
@@ -16,6 +17,15 @@ export interface Block {
   node: NodeId | null;
   premises: NodeId[];
   justification: string | null;
+  /**
+   * Effacement progressif : bloc fourni par la preuve modèle. « tout » : bloc figé ;
+   * « justification » : seule la justification est à retrouver.
+   */
+  lock?: 'tout' | 'justification';
+  /** Effacement progressif : étape effacée de la preuve modèle, à reconstruire. */
+  hole?: NodeId;
+  /** Étape effacée : prémisses de la preuve modèle (jamais affichées, servent aux renvois). */
+  holeUses?: NodeId[];
 }
 
 export interface BlockMeta {
@@ -253,4 +263,77 @@ const LOWERABLE = /^(Théorème|Lemme|Inégalité|Formule|Identité|Critère|Pri
 /** Minuscule initiale pour une justification insérée en milieu de phrase. */
 function lowerFirst(s: string): string {
   return LOWERABLE.test(s) ? s.charAt(0).toLowerCase() + s.slice(1) : s;
+}
+
+/* ───────────────────────── Effacement progressif ───────────────────────── */
+
+/**
+ * Étapes de l'effacement progressif (laboratoire de démonstration) : on lit la preuve
+ * modèle, puis on retrouve ses justifications, puis on reconstruit les étapes effacées,
+ * enfin on écrit la démonstration sur une page blanche.
+ */
+export const FADING_LEVELS = ['lire', 'justifier', 'completer', 'blanche'] as const;
+export type FadingLevel = (typeof FADING_LEVELS)[number];
+
+export const FADING_META: Record<FadingLevel, { label: string; help: string }> = {
+  lire: {
+    label: 'Lire la preuve modèle',
+    help: 'La démonstration complète, bloc par bloc et rédigée. Repère pour chaque bloc ce qu’il utilise et ce qui le justifie.',
+  },
+  justifier: {
+    label: 'Retrouver les justifications',
+    help: 'Les affirmations et leurs prémisses sont en place ; la justification de chaque bloc a été effacée. Choisis-la, puis vérifie le bloc.',
+  },
+  completer: {
+    label: 'Reconstruire les étapes effacées',
+    help: 'Environ une étape sur deux a été effacée, en partant de la fin. Pour chaque trou, choisis l’affirmation, ses prémisses et sa justification.',
+  },
+  blanche: {
+    label: 'Page blanche',
+    help: 'Plus rien n’est donné : écris toute la démonstration, avec le guide si besoin.',
+  },
+};
+
+export interface FadingSeed {
+  blocks: Block[];
+  graph: PlayerGraph;
+  passedChecks: NodeId[];
+  /** Affirmations effacées : leur texte reste masqué tant qu'elles ne sont pas établies. */
+  masked: NodeId[];
+}
+
+/** Étapes effacées : une sur deux en partant de la fin, la conclusion restant en place. */
+export function fadedSteps(stepNodes: readonly NodeId[], goal: NodeId): NodeId[] {
+  const candidates = stepNodes.filter((id) => id !== goal);
+  const out: NodeId[] = [];
+  for (let i = candidates.length - 1; i >= 0; i -= 2) out.push(candidates[i]!);
+  return out;
+}
+
+/** Point de départ d'une étape de l'effacement progressif, à partir de la preuve modèle. */
+export function fadingSeed(spec: ProofSpec, level: Exclude<FadingLevel, 'blanche'>): FadingSeed | null {
+  const rules = referenceDerivation(spec);
+  if (!rules) return null;
+  const intros: Block[] = localsOf(spec, rules).map((id) => ({ key: newKey(), kind: 'intro', node: id, premises: [], justification: null, lock: 'tout' }));
+  const faded = new Set(level === 'completer' ? fadedSteps(rules.map((r) => r.to), spec.goal) : []);
+  const steps: Block[] = rules.map((r) =>
+    faded.has(r.to)
+      ? { key: newKey(), kind: inferKind(spec, r.to, r.by), node: null, premises: [], justification: null, hole: r.to, holeUses: [...r.from] }
+      : {
+          key: newKey(),
+          kind: inferKind(spec, r.to, r.by),
+          node: r.to,
+          premises: [...r.from],
+          justification: level === 'justifier' ? null : r.by,
+          lock: level === 'justifier' ? 'justification' : 'tout',
+        },
+  );
+  const graph: PlayerGraph = { placed: [], steps: {} };
+  for (const b of steps) {
+    if (!b.node) continue;
+    graph.placed.push(b.node);
+    graph.steps[b.node] = { premises: [...b.premises], justification: b.justification };
+  }
+  const kept = rules.filter((r) => !faded.has(r.to));
+  return { blocks: [...intros, ...steps], graph, passedChecks: checksOf(spec, kept), masked: [...faded] };
 }

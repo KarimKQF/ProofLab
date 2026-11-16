@@ -3,7 +3,7 @@
  * Ajouter un résultat revient à ajouter un fichier `worlds/wN/tNN-<id>.ts` ; aucune
  * autre modification n'est nécessaire.
  */
-import type { Concept, CounterexampleTask, Definition, Exercise, Level, TheoremContent } from './schema';
+import type { Concept, CounterexampleTask, Definition, Demonstration, Exercise, Level, TheoremContent } from './schema';
 import { SHARED_CONCEPTS } from './concepts';
 import { CATALOG_BY_ID, THEOREM_CATALOG, WORLDS } from './catalog';
 import type { CatalogEntry } from './catalog';
@@ -59,6 +59,15 @@ export const EXERCISES: Exercise[] = THEOREM_MODULES.flatMap((m) => m.exercises.
 export const DEFINITIONS: Definition[] = THEOREM_MODULES.flatMap((m) => m.definitions);
 export const COUNTEREXAMPLES: CounterexampleTask[] = THEOREM_MODULES.flatMap((m) => m.counterexamples);
 export const CONCEPTS: Concept[] = [...SHARED_CONCEPTS, ...THEOREM_MODULES.flatMap((m) => m.concepts)];
+
+/** Démonstrations de résultats (laboratoire de démonstration) : un fichier `demonstrations/dNN-<id>.ts` par résultat. */
+const demoFiles = import.meta.glob<{ default: Demonstration }>('./demonstrations/d*.ts', { eager: true });
+export const DEMONSTRATIONS: Demonstration[] = Object.values(demoFiles)
+  .map((m) => m.default)
+  .filter((d): d is Demonstration => Boolean(d?.proof))
+  .map((d) => reviewed(d.id, d))
+  .sort((a, b) => (CATALOG_BY_ID.get(a.theoremId)?.n ?? 0) - (CATALOG_BY_ID.get(b.theoremId)?.n ?? 0));
+export const DEMONSTRATION_BY_THEOREM = new Map(DEMONSTRATIONS.map((d) => [d.theoremId, d]));
 
 export const THEOREM_BY_ID = new Map(THEOREMS.map((t) => [t.id, t]));
 export const EXERCISE_BY_ID = new Map(EXERCISES.map((e) => [e.id, e]));

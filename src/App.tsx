@@ -20,6 +20,8 @@ const LabsPage = lazy(() => import('./pages/LabsPage').then((m) => ({ default: m
 const LabPage = lazy(() => import('./pages/LabPage').then((m) => ({ default: m.LabPage })));
 const AtlasPage = lazy(() => import('./pages/AtlasPage').then((m) => ({ default: m.AtlasPage })));
 const PlatePage = lazy(() => import('./pages/AtlasPage').then((m) => ({ default: m.PlatePage })));
+const ErrorHuntPage = lazy(() => import('./pages/ErrorHuntPage').then((m) => ({ default: m.ErrorHuntPage })));
+const TrapsPage = lazy(() => import('./pages/TrapsPage').then((m) => ({ default: m.TrapsPage })));
 const DictionaryPage = lazy(() => import('./pages/DictionaryPage').then((m) => ({ default: m.DictionaryPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
@@ -84,6 +86,9 @@ export function App() {
             <Route path="/contre-exemples" element={<CounterexamplesPage />} />
             <Route path="/contre-exemples/:id" element={<CounterexamplesPage />} />
             <Route path="/examen" element={<ExamPage />} />
+            <Route path="/trouver-erreur" element={<ErrorHuntPage />} />
+            <Route path="/trouver-erreur/:id" element={<ErrorHuntPage />} />
+            <Route path="/pieges" element={<TrapsPage />} />
             <Route path="/revision" element={<ReviewPage />} />
             <Route path="/tableau" element={<DashboardPage />} />
             <Route path="/carnet" element={<NotebookPage />} />

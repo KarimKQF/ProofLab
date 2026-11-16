@@ -8,6 +8,7 @@ import { DICO, DICO_BY_ID, DOMAIN_LABEL, DOMAIN_ORDER, searchDico, type DicoDoma
 import { Card, cx, PageHeader } from '@/components/ui';
 import { MathText } from '@/components/Math';
 import { EntryView, TermChip } from '@/components/glossary/EntryView';
+import { NotionStatus } from '@/components/glossary/NotionStatus';
 
 /** Notions préalables, de proche en proche (parcours en largeur, sans répétition). */
 function learningPath(entry: ResolvedEntry): string[] {
@@ -114,6 +115,9 @@ export function DictionaryPage() {
         <div id="fiche" className="min-w-0">
           {entry ? (
             <Card className="p-5 md:p-6">
+              <div className="mb-2 flex justify-end">
+                <NotionStatus id={entry.id} />
+              </div>
               <EntryView entry={entry} />
               {path.length > 0 && (
                 <section className="mt-5 border-t border-line pt-4">
