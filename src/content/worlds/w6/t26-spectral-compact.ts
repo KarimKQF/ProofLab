@@ -653,7 +653,7 @@ const moduleT26: TheoremModule = {
     {
       id: 'spectral-compact-base-hilbertienne',
       term: 'Base hilbertienne',
-      statement: t`Une famille orthonormée $(e_k)$ de $H$ est une base hilbertienne si l'espace qu'elle engendre est dense dans $H$ ; alors $u=\sum_k\langle u,e_k\rangle e_k$ et $\|u\|^2=\sum_k\langle u,e_k\rangle^2$ pour tout $u\in H$.`,
+      statement: t`Une famille orthonormée $(e_k)$ de $H$ est une base hilbertienne si l'espace qu'elle engendre est dense dans $H$ ; alors $u=\sum_k\langle u,e_k\rangle e_k$ et $\|u\|^2=\sum_k|\langle u,e_k\rangle|^2$ pour tout $u\in H$.`,
       source: complement('Vocabulaire employé en section 6.4 du polycopié'),
     },
   ],

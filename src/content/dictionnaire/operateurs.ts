@@ -259,7 +259,7 @@ export const OPERATEURS: DicoEntry[] = [
     forms: ['mesure spectrale', 'mesures spectrales'],
     from: 'spectral-general-mesure-spectrale',
     complements: [
-      { kind: 'retenir', text: t`Pour $A$ auto-adjoint : $A=\int\lambda\,dE(\lambda)$ et $\|Au\|^2=\int\lambda^2\,d\mu_u(\lambda)$, où $\mu_u(B)=\|E(B)u\|^2$.` },
+      { kind: 'retenir', text: t`Pour $A$ auto-adjoint : $A=\int\lambda\,dE(\lambda)$ et, pour $u\in D(A)$, $\|Au\|^2=\int\lambda^2\,d\mu_u(\lambda)$, où $\mu_u(B)=\|E(B)u\|^2$. La masse totale est $\mu_u(\mathbb R)=\|u\|^2$ ; c'est une probabilité seulement si $\|u\|=1$.` },
     ],
     prerequisites: ['auto-adjoint', 'projecteur'],
     related: ['calcul-fonctionnel', 'resultat-spectral-general'],
@@ -272,7 +272,7 @@ export const OPERATEURS: DicoEntry[] = [
     forms: ['calcul fonctionnel', 'calculs fonctionnels'],
     from: 'spectral-general-calcul-f',
     complements: [
-      { kind: 'exemple', text: t`$e^{-tA}$, $A^{1/2}$, $(A+I)^{-1}$ pour $A\ge0$ auto-adjoint ; pour un opérateur diagonal, $f(A)$ multiplie le $n$-ième coefficient par $f(\lambda_n)$.` },
+      { kind: 'exemple', text: t`$e^{-tA}$ pour $t\ge0$, $A^{1/2}$, $(A+I)^{-1}$ pour $A\ge0$ auto-adjoint ; pour un opérateur diagonal, $f(A)$ multiplie le $n$-ième coefficient par $f(\lambda_n)$.` },
     ],
     prerequisites: ['mesure-spectrale'],
     related: ['laplacien-fractionnaire'],
@@ -282,9 +282,10 @@ export const OPERATEURS: DicoEntry[] = [
     term: 'Opérateur diagonal (de multiplication)',
     domain: 'operateurs',
     forms: ['opérateur diagonal', 'opérateurs diagonaux', 'opérateur de multiplication', 'opérateurs de multiplication', 'diagonal', 'diagonaux'],
-    definition: t`Sur $\ell^2$ : $(Au)_n=\lambda_nu_n$, de domaine $\{u:\sum\lambda_n^2|u_n|^2<\infty\}$. Plus généralement, la multiplication par une fonction $m$ sur $L^2$.`,
+    definition: t`Sur $\ell^2$ : $(Au)_n=\lambda_nu_n$, de domaine $\{u\in\ell^2:\sum_n|\lambda_n|^2|u_n|^2<\infty\}$. Plus généralement, la multiplication par une fonction mesurable $m$ sur $L^2$ a pour domaine $\{u\in L^2:mu\in L^2\}$.`,
     complements: [
-      { kind: 'retenir', text: t`Il est borné si et seulement si $(\lambda_n)$ est bornée, compact si et seulement si $\lambda_n\to0$, auto-adjoint si les $\lambda_n$ sont réels. Le théorème spectral dit que tout auto-adjoint est de ce type, à unitaire près.` },
+      { kind: 'retenir', text: t`Pour l'opérateur diagonal sur $\ell^2$ : il est borné si et seulement si $(\lambda_n)$ est bornée, compact si et seulement si $\lambda_n\to0$, et auto-adjoint si les $\lambda_n$ sont réels. Le théorème spectral général représente un auto-adjoint par une multiplication sur un espace $L^2$ convenable ; il ne garantit pas une base de vecteurs propres.` },
+      { kind: 'contre-exemple', text: t`Sur $L^2(0,1)$, $Mu(x)=xu(x)$ est auto-adjoint et n'a aucun vecteur propre non nul. Il ne se réduit donc pas à une diagonale sur une base propre dénombrable.` },
     ],
     related: ['spectre', 'operateur-compact', 'calcul-fonctionnel'],
   },

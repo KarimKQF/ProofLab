@@ -25,6 +25,7 @@ import { NotFoundPage } from './NotFoundPage';
 import { MathText } from '@/components/Math';
 import { TermScope } from '@/components/glossary/context';
 import { hasInteractive, interactiveLoader } from '@/atlas-interactif/registry';
+import { OPERATOR_PLATES } from '@/components/operator-atlas/data';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const PAGE_RATIO = '841.89 / 595.28';
@@ -90,12 +91,16 @@ export function AtlasPage() {
   }, [part, group, q, onlyLinked]);
 
   const grouped = !q && !onlyLinked;
+  const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const operatorWords = normalize(q).split(/\s+/).filter(Boolean);
+  const operatorPlates = part || group ? [] : OPERATOR_PLATES.filter((p) =>
+    (!onlyLinked || p.theoremIds.length > 0) && operatorWords.every((word) => normalize(`${p.title} ${p.description}`).includes(word)));
   const parts = ATLAS_PARTS.filter((pt) => plates.some((p) => p.part === pt.roman));
 
   return (
     <div className="max-w-6xl mx-auto px-6 md:px-10 py-9">
-      <PageHeader eyebrow="Compagnon du cours de géométrie de Lie" title="Atlas visuel">
-        {ATLAS_SOURCE.plates} planches de l’Atlas visuel ({ATLAS_SOURCE.author}), reproduites telles quelles. Les textes des planches sont cités sans retouche ; les formules se lisent dans les images. Chaque planche renvoie au chapitre du cours, aux résultats du jeu qui la travaillent et, le cas échéant, à une scène du laboratoire G.
+      <PageHeader eyebrow="Analyse fonctionnelle et géométrie de Lie" title="Atlas visuel">
+        {OPERATOR_PLATES.length} nouvelles planches interactives sur les opérateurs et le spectre, et {ATLAS_SOURCE.plates} planches de géométrie de Lie ({ATLAS_SOURCE.author}). Chaque représentation est reliée au cours et à ses résultats. Les planches originales de Lie et leurs textes restent consultables.
       </PageHeader>
 
       <div className="mb-5 space-y-3">
@@ -104,7 +109,7 @@ export function AtlasPage() {
             type="search"
             value={q}
             onChange={(e) => update({ q: e.target.value })}
-            placeholder="Chercher : crochet, exponentielle, Noether…"
+            placeholder="Chercher : spectre, compact, crochet, Noether…"
             aria-label="Chercher dans les planches"
             className="min-w-[16rem] flex-1 rounded-md border border-line-strong bg-surface-2 px-3 py-1.5 text-[14px]"
           />
@@ -139,11 +144,32 @@ export function AtlasPage() {
           ))}
         </div>
         <p className="text-[13px] text-text-3" role="status">
-          {plates.length} planche{plates.length > 1 ? 's' : ''}
+          {plates.length + operatorPlates.length} planche{plates.length + operatorPlates.length > 1 ? 's' : ''}
         </p>
       </div>
 
-      {plates.length === 0 && <p className="text-text-2">Aucune planche ne correspond.</p>}
+      {plates.length === 0 && operatorPlates.length === 0 && <p className="text-text-2">Aucune planche ne correspond.</p>}
+
+      {operatorPlates.length > 0 && (
+        <section aria-labelledby="atlas-operateurs" className="mb-9">
+          <div className="flex flex-wrap justify-between items-baseline gap-2 mb-3">
+            <h2 id="atlas-operateurs" className="font-serif text-2xl">Opérateurs et théorie spectrale</h2>
+            <Link to="/operateurs" className="text-sm underline">Suivre le cours accompagné →</Link>
+          </div>
+          <p className="text-sm text-text-2 mb-4">Modifier un paramètre, prédire son effet et distinguer ce que montre la figure de ce qui exige une preuve.</p>
+          <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {operatorPlates.map((p, i) => (
+              <li key={p.id}>
+                <Link to={`/atlas/operateurs/${p.id}`} className="block h-full rounded-lg border border-line bg-surface p-4 hover:border-line-strong" data-operator-plate={p.id}>
+                  <span className="font-mono text-[11px] text-text-3">Analyse · {String(i + 1).padStart(2, '0')} · interactif</span>
+                  <h3 className="font-serif text-lg mt-1 mb-2"><MathText text={p.title} /></h3>
+                  <p className="text-sm text-text-2"><MathText text={p.description} /></p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {grouped ? (
         <div className="space-y-8">

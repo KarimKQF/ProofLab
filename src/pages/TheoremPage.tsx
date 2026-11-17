@@ -11,6 +11,7 @@ import { autonomyOf, isUnlocked, theoremMastery } from '@/core/progression/maste
 import { toRoman } from './MapPage';
 import { plateById, plateImage, SCENE_FOR_THEOREM } from '@/content/atlas';
 import { NotFoundPage } from './NotFoundPage';
+import { OPERATOR_LESSONS } from '@/content/operateurs';
 
 const CONCLUSIONS = [
   ['existence', 'Existence'],
@@ -36,6 +37,7 @@ export function TheoremPage() {
   const unlocked = isUnlocked(id, exercises, unlockAll);
   const mastery = theoremMastery(id, exercises, now());
   const items = exercisesOf(id);
+  const operatorLessons = OPERATOR_LESSONS.filter((lesson) => lesson.theoremIds.includes(id));
 
   const self = { exclude: [`resultat-${id}`] };
   return (
@@ -226,6 +228,17 @@ export function TheoremPage() {
           </div>
 
           <aside className="space-y-4">
+            {operatorLessons.length > 0 && (
+              <Card className="p-4">
+                <SectionTitle className="mb-2">Cours accompagné et atlas</SectionTitle>
+                <ul className="space-y-3 text-sm">
+                  {operatorLessons.map((lesson) => <li key={lesson.id}>
+                    <Link to={`/operateurs/${lesson.id}`} className="underline"><MathText text={lesson.title} /></Link>
+                    <Link to={`/atlas/operateurs/${lesson.atlasId}`} className="block text-xs text-text-2 underline mt-1">Manipuler la représentation géométrique</Link>
+                  </li>)}
+                </ul>
+              </Card>
+            )}
             <Card className="p-4">
               <SectionTitle className="mb-2">Maîtrise</SectionTitle>
               <ProgressBar value={mastery.value} label="Maîtrise du résultat" />

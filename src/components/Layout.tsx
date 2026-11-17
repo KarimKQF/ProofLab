@@ -50,6 +50,7 @@ function Icon({ name }: { name: IconName }) {
 const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/', label: 'Accueil', icon: 'home', end: true },
   { to: '/carte', label: 'Carte', icon: 'map' },
+  { to: '/operateurs', label: 'Opérateurs et spectre', icon: 'book' },
   { to: '/labos', label: 'Laboratoires', icon: 'lab' },
   { to: '/atlas', label: 'Atlas visuel', icon: 'atlas' },
   { to: '/dictionnaire', label: 'Dictionnaire', icon: 'dico' },

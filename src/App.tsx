@@ -19,6 +19,8 @@ const FreeModePage = lazy(() => import('./pages/FreeModePage').then((m) => ({ de
 const LabsPage = lazy(() => import('./pages/LabsPage').then((m) => ({ default: m.LabsPage })));
 const LabPage = lazy(() => import('./pages/LabPage').then((m) => ({ default: m.LabPage })));
 const AtlasPage = lazy(() => import('./pages/AtlasPage').then((m) => ({ default: m.AtlasPage })));
+const OperatorCoursePage = lazy(() => import('./pages/OperatorCoursePage').then((m) => ({ default: m.OperatorCoursePage })));
+const OperatorAtlasPage = lazy(() => import('./pages/OperatorAtlasPage').then((m) => ({ default: m.OperatorAtlasPage })));
 const PlatePage = lazy(() => import('./pages/AtlasPage').then((m) => ({ default: m.PlatePage })));
 const ErrorHuntPage = lazy(() => import('./pages/ErrorHuntPage').then((m) => ({ default: m.ErrorHuntPage })));
 const TrapsPage = lazy(() => import('./pages/TrapsPage').then((m) => ({ default: m.TrapsPage })));
@@ -97,6 +99,9 @@ export function App() {
             <Route path="/labos" element={<LabsPage />} />
             <Route path="/labo/:id" element={<LabPage />} />
             <Route path="/atlas" element={<AtlasPage />} />
+            <Route path="/operateurs" element={<OperatorCoursePage />} />
+            <Route path="/operateurs/:lessonId" element={<OperatorCoursePage />} />
+            <Route path="/atlas/operateurs/:plateId" element={<OperatorAtlasPage />} />
             <Route path="/atlas/:n" element={<PlatePage />} />
             <Route path="/dictionnaire" element={<DictionaryPage />} />
             <Route path="/dictionnaire/:id" element={<DictionaryPage />} />
